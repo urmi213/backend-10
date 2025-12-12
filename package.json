@@ -1,0 +1,22 @@
+{
+  "name": "pawmart-backend",
+  "version": "1.0.0",
+  "description": "PawMart Backend API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.22.1",
+    "mongodb": "^7.0.0",
+    "mongoose": "^7.0.0",
+    "swiper": "^12.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
