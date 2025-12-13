@@ -10,7 +10,7 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// MongoDB URI - Check if connection string is correct
+
 const uri = "mongodb+srv://pawmart_user:RlJ9RGOVkxXSFL3z@petshopcluster.9k2rmcx.mongodb.net/pawmartDB?retryWrites=true&w=majority&appName=PetShopCluster";
 
 console.log('🔗 Connecting to MongoDB...');
@@ -21,7 +21,7 @@ const client = new MongoClient(uri, {
     strict: true,
     deprecationErrors: true,
   },
-  serverSelectionTimeoutMS: 30000, // Increased timeout
+  serverSelectionTimeoutMS: 30000, 
   connectTimeoutMS: 30000,
   socketTimeoutMS: 45000,
 });
@@ -29,7 +29,7 @@ const client = new MongoClient(uri, {
 let listingsCollection = null;
 let ordersCollection = null;
 
-// Sample data for fallback
+
 const mockListings = [
   {
     _id: '1',
@@ -94,7 +94,6 @@ const mockListings = [
   }
 ];
 
-// Connect to MongoDB
 async function connectToMongoDB() {
   try {
     console.log('🔄 Attempting MongoDB connection...');
@@ -104,13 +103,12 @@ async function connectToMongoDB() {
     
     const database = client.db("pawmartDB");
     
-    // Get or create collections
+   
     listingsCollection = database.collection("listings");
     ordersCollection = database.collection("orders");
     
     console.log('📊 Collections initialized');
     
-    // Seed listings if empty
     const listingCount = await listingsCollection.countDocuments();
     if (listingCount === 0) {
       console.log('🌱 Seeding listings collection...');
@@ -118,7 +116,6 @@ async function connectToMongoDB() {
       console.log(`✅ Seeded ${mockListings.length} listings`);
     }
     
-    // Create indexes for orders
     await ordersCollection.createIndex({ email: 1 });
     await ordersCollection.createIndex({ createdAt: -1 });
     console.log('🔧 Created database indexes');
@@ -128,14 +125,12 @@ async function connectToMongoDB() {
   } catch (error) {
     console.error("❌ MongoDB connection error:", error.message);
     console.error("Full error:", error);
-    
-    // Don't crash if MongoDB fails - use mock mode
+
     console.log('⚠️ Switching to mock data mode');
     return false;
   }
 }
 
-// Initialize connection
 connectToMongoDB().then(isConnected => {
   if (isConnected) {
     console.log('🚀 Backend ready with MongoDB');
@@ -144,14 +139,11 @@ connectToMongoDB().then(isConnected => {
   }
 });
 
-// ==================== ROUTES ====================
 
-// Root endpoint
 app.get('/', (req, res) => {
   res.send('🐾 PawMart Backend Server v1.0 is Running!');
 });
 
-// Health check with detailed status
 app.get('/health', (req, res) => {
   const status = {
     success: true,
@@ -180,9 +172,7 @@ app.get('/health', (req, res) => {
   res.json(status);
 });
 
-// ==================== LISTINGS ROUTES ====================
 
-// Get latest listings
 app.get('/listings/latest', async (req, res) => {
   try {
     console.log('📥 GET /listings/latest');
@@ -208,7 +198,6 @@ app.get('/listings/latest', async (req, res) => {
   }
 });
 
-// Get all listings
 app.get('/listings', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
@@ -233,7 +222,6 @@ app.get('/listings', async (req, res) => {
   }
 });
 
-// Get listings by category
 app.get('/listings/category/:category', async (req, res) => {
   try {
     const category = req.params.category;
@@ -256,7 +244,6 @@ app.get('/listings/category/:category', async (req, res) => {
   }
 });
 
-// Get single listing by ID
 app.get('/listings/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -265,18 +252,16 @@ app.get('/listings/:id', async (req, res) => {
     let listing;
     
     if (listingsCollection) {
-      // Try MongoDB ObjectId first
+      
       if (ObjectId.isValid(id)) {
         listing = await listingsCollection.findOne({ _id: new ObjectId(id) });
       }
       
-      // If not found, try string ID
       if (!listing) {
         listing = await listingsCollection.findOne({ _id: id });
       }
     }
     
-    // If still not found, try mock data
     if (!listing) {
       listing = mockListings.find(item => item._id === id);
     }
@@ -301,9 +286,6 @@ app.get('/listings/:id', async (req, res) => {
   }
 });
 
-// ==================== ORDERS ROUTES ====================
-
-// Create new order - FIXED VERSION
 app.post('/orders', async (req, res) => {
   try {
     console.log('📦 POST /orders - Received order data');
@@ -311,7 +293,6 @@ app.post('/orders', async (req, res) => {
     
     const orderData = req.body;
     
-    // Validate required fields
     const requiredFields = ['email', 'productName', 'buyerName', 'phone', 'address'];
     const missingFields = requiredFields.filter(field => !orderData[field]);
     
@@ -322,7 +303,6 @@ app.post('/orders', async (req, res) => {
       });
     }
     
-    // Prepare order document
     const orderDocument = {
       productId: orderData.productId || '',
       productName: orderData.productName,
@@ -343,7 +323,6 @@ app.post('/orders', async (req, res) => {
     
     let savedOrder;
     
-    // Try to save to MongoDB
     if (ordersCollection) {
       try {
         console.log('💾 Saving to MongoDB...');
@@ -359,8 +338,7 @@ app.post('/orders', async (req, res) => {
         
       } catch (mongoError) {
         console.error('❌ MongoDB save error:', mongoError.message);
-        
-        // Fallback to mock mode
+       
         savedOrder = {
           _id: new ObjectId().toString(),
           ...orderDocument
@@ -369,7 +347,7 @@ app.post('/orders', async (req, res) => {
         console.log('⚠️ Using mock order with ID:', savedOrder._id);
       }
     } else {
-      // Mock mode
+      
       savedOrder = {
         _id: new ObjectId().toString(),
         ...orderDocument
@@ -378,7 +356,6 @@ app.post('/orders', async (req, res) => {
       console.log('✅ Order saved in mock mode with ID:', savedOrder._id);
     }
     
-    // Success response
     res.status(201).json({
       success: true,
       message: '🎉 Order placed successfully!',
@@ -397,7 +374,6 @@ app.post('/orders', async (req, res) => {
   }
 });
 
-// Get orders by user email
 app.get('/orders/user/:email', async (req, res) => {
   try {
     const email = req.params.email.toLowerCase();
@@ -411,7 +387,7 @@ app.get('/orders/user/:email', async (req, res) => {
         .toArray();
       console.log(`✅ Found ${orders.length} orders for ${email}`);
     } else {
-      // Mock data for testing
+      
       orders = [
         {
           _id: 'mock-order-1',
@@ -443,9 +419,6 @@ app.get('/orders/user/:email', async (req, res) => {
   }
 });
 
-// ==================== ERROR HANDLING ====================
-
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -453,7 +426,7 @@ app.use((req, res) => {
   });
 });
 
-// Global error handler
+
 app.use((err, req, res, next) => {
   console.error('🔥 Unhandled error:', err);
   res.status(500).json({
@@ -463,7 +436,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ==================== SERVER START ====================
+
 
 app.listen(port, () => {
   console.log(`🚀 Server running on http://localhost:${port}`);
@@ -475,7 +448,7 @@ app.listen(port, () => {
   console.log(`   GET  http://localhost:${port}/listings/latest`);
 });
 
-// Graceful shutdown
+
 process.on('SIGINT', async () => {
   console.log('🛑 Shutting down server...');
   try {

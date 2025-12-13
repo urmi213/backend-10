@@ -1,7 +1,11 @@
 ## Description:
-This is the backend server for the PawMart project. It is deployed on Vercel and handles listings and orders for the platform.
+`/orders` GET route intentionally তৈরি করা হয়নি।
+Order দেখতে `/orders/user/:email` route ব্যবহার করতে হবে।
+সকল order creation local server (http://localhost:5000/orders) এ POST request দিয়ে পরীক্ষা করা হয়েছে।
+Live backend secured এবং read-only, demonstration এর জন্য GET request local backend এ ব্যবহার করা হয়েছে।
 
-Example Endpoints:
+## Example Endpoints:
+/orders --> POST --> ❌ Does not work on live backend; requires local testing
 
 ## Get latest listings:
 
