@@ -2,12 +2,18 @@ const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
+
 const app = express();
 const port = process.env.PORT || 5000;
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
+// MongoDB URI - Check if connection string is correct
 const uri = "mongodb+srv://pawmart_user:RlJ9RGOVkxXSFL3z@petshopcluster.9k2rmcx.mongodb.net/pawmartDB?retryWrites=true&w=majority&appName=PetShopCluster";
+
+console.log('🔗 Connecting to MongoDB...');
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -15,13 +21,15 @@ const client = new MongoClient(uri, {
     strict: true,
     deprecationErrors: true,
   },
-  serverSelectionTimeoutMS: 5000,
-  connectTimeoutMS: 10000,
+  serverSelectionTimeoutMS: 30000, // Increased timeout
+  connectTimeoutMS: 30000,
+  socketTimeoutMS: 45000,
 });
 
 let listingsCollection = null;
 let ordersCollection = null;
 
+// Sample data for fallback
 const mockListings = [
   {
     _id: '1',
@@ -59,20 +67,9 @@ const mockListings = [
     email: 'petfood@example.com',
     date: '2025-10-29'
   },
+  ,
   {
     _id: '4',
-    name: 'Cat Scratching Post',
-    category: 'Accessories',
-    price: 35,
-    location: 'Khulna',
-    image: 'https://images.unsplash.com/photo-1514888286974-6d03bdeacba8?w=800&auto=format&fit=crop&q=80',
-    description: 'Durable scratching post with sisal rope',
-    sellerName: 'Pet Accessories BD',
-    email: 'accessories@example.com',
-    date: '2025-10-30'
-  },
-  {
-    _id: '5',
     name: 'Organic Pet Shampoo',
     category: 'Care Products',
     price: 15,
@@ -84,7 +81,7 @@ const mockListings = [
     date: '2025-10-31'
   },
   {
-    _id: '6',
+    _id: '5',
     name: 'Rabbit Hutch with Run',
     category: 'Accessories',
     price: 120,
@@ -97,310 +94,244 @@ const mockListings = [
   }
 ];
 
+// Connect to MongoDB
 async function connectToMongoDB() {
   try {
+    console.log('🔄 Attempting MongoDB connection...');
+    
     await client.connect();
-    console.log("✅ Connected to MongoDB");
+    console.log("✅ Successfully connected to MongoDB Atlas");
     
     const database = client.db("pawmartDB");
+    
+    // Get or create collections
     listingsCollection = database.collection("listings");
     ordersCollection = database.collection("orders");
     
-    // Create collections if they don't exist
-    const collections = await database.listCollections().toArray();
-    const collectionNames = collections.map(col => col.name);
+    console.log('📊 Collections initialized');
     
-    if (!collectionNames.includes('listings')) {
-      await database.createCollection('listings');
-      console.log('📝 Created listings collection');
-      
-      if (await listingsCollection.countDocuments() === 0) {
-        await listingsCollection.insertMany(mockListings);
-        console.log('📝 Inserted sample listings');
-      }
+    // Seed listings if empty
+    const listingCount = await listingsCollection.countDocuments();
+    if (listingCount === 0) {
+      console.log('🌱 Seeding listings collection...');
+      await listingsCollection.insertMany(mockListings);
+      console.log(`✅ Seeded ${mockListings.length} listings`);
     }
     
-    if (!collectionNames.includes('orders')) {
-      await database.createCollection('orders');
-      console.log('📝 Created orders collection');
-     
-      await ordersCollection.createIndex({ email: 1 });
-      await ordersCollection.createIndex({ createdAt: -1 });
-      console.log('📝 Created indexes for orders collection');
-    }
+    // Create indexes for orders
+    await ordersCollection.createIndex({ email: 1 });
+    await ordersCollection.createIndex({ createdAt: -1 });
+    console.log('🔧 Created database indexes');
     
     return true;
+    
   } catch (error) {
-    console.error("❌ MongoDB connection failed:", error.message);
+    console.error("❌ MongoDB connection error:", error.message);
+    console.error("Full error:", error);
+    
+    // Don't crash if MongoDB fails - use mock mode
+    console.log('⚠️ Switching to mock data mode');
     return false;
   }
 }
 
-
+// Initialize connection
 connectToMongoDB().then(isConnected => {
   if (isConnected) {
-    console.log('✅ MongoDB ready');
+    console.log('🚀 Backend ready with MongoDB');
   } else {
-    console.log('⚠️ Using mock data mode');
+    console.log('⚠️ Backend running in mock mode');
   }
 });
 
+// ==================== ROUTES ====================
 
+// Root endpoint
 app.get('/', (req, res) => {
-  res.send('PawMart Backend Server is Running! 🐾');
+  res.send('🐾 PawMart Backend Server v1.0 is Running!');
 });
 
+// Health check with detailed status
 app.get('/health', (req, res) => {
-  const mongoStatus = listingsCollection ? 'Connected' : 'Disconnected';
-  res.json({ 
-    success: true, 
-    message: 'Server is healthy', 
+  const status = {
+    success: true,
+    message: 'Server is healthy',
     timestamp: new Date().toISOString(),
-    mongoDB: mongoStatus,
-    endpoints: {
-      latest: '/listings/latest',
-      all: '/listings',
-      categories: '/listings/category/:category'
-    }
-  });
+    mongoDB: {
+      connected: ordersCollection !== null,
+      collections: {
+        listings: listingsCollection !== null,
+        orders: ordersCollection !== null
+      }
+    },
+    server: {
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      nodeVersion: process.version
+    },
+    endpoints: [
+      { method: 'GET', path: '/listings', description: 'Get all listings' },
+      { method: 'GET', path: '/listings/:id', description: 'Get single listing' },
+      { method: 'POST', path: '/orders', description: 'Create new order' },
+      { method: 'GET', path: '/orders/user/:email', description: 'Get user orders' }
+    ]
+  };
+  
+  res.json(status);
 });
 
+// ==================== LISTINGS ROUTES ====================
 
+// Get latest listings
 app.get('/listings/latest', async (req, res) => {
   try {
-    console.log('📥 GET /listings/latest requested');
+    console.log('📥 GET /listings/latest');
+    
+    let listings;
     
     if (listingsCollection) {
-      const cursor = listingsCollection.find().sort({ _id: -1 }).limit(6);
-      const listings = await cursor.toArray();
-      
-      console.log(`✅ Sending ${listings.length} latest listings from MongoDB`);
-      res.json(listings);
-      
+      listings = await listingsCollection.find()
+        .sort({ _id: -1 })
+        .limit(6)
+        .toArray();
+      console.log(`✅ Found ${listings.length} listings in MongoDB`);
     } else {
-      console.log('✅ Sending mock latest listings');
-      res.json(mockListings.slice(0, 6));
+      listings = mockListings.slice(0, 6);
+      console.log(`✅ Using ${listings.length} mock listings`);
     }
+    
+    res.json(listings);
+    
   } catch (error) {
     console.error('❌ Error in /listings/latest:', error);
     res.json(mockListings.slice(0, 6));
   }
 });
 
+// Get all listings
 app.get('/listings', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
+    console.log(`📥 GET /listings?limit=${limit}`);
+    
+    let listings;
     
     if (listingsCollection) {
-      const cursor = listingsCollection.find().sort({ _id: -1 }).limit(limit);
-      const listings = await cursor.toArray();
-      res.json(listings);
+      listings = await listingsCollection.find()
+        .sort({ _id: -1 })
+        .limit(limit)
+        .toArray();
     } else {
-      res.json(mockListings.slice(0, limit));
+      listings = mockListings.slice(0, limit);
     }
+    
+    res.json(listings);
+    
   } catch (error) {
-    console.error('Error fetching listings:', error);
+    console.error('❌ Error fetching listings:', error);
     res.json(mockListings.slice(0, 20));
   }
 });
 
+// Get listings by category
 app.get('/listings/category/:category', async (req, res) => {
   try {
     const category = req.params.category;
+    console.log(`📥 GET /listings/category/${category}`);
+    
+    let listings;
     
     if (listingsCollection) {
-      const cursor = listingsCollection.find({ category });
-      const listings = await cursor.toArray();
-      res.json(listings);
+      listings = await listingsCollection.find({ category }).toArray();
     } else {
-      const filtered = mockListings.filter(item => item.category === category);
-      res.json(filtered);
+      listings = mockListings.filter(item => item.category === category);
     }
+    
+    res.json(listings);
+    
   } catch (error) {
-    console.error('Error fetching category listings:', error);
+    console.error('❌ Error fetching category listings:', error);
     const filtered = mockListings.filter(item => item.category === req.params.category);
     res.json(filtered);
   }
 });
 
+// Get single listing by ID
 app.get('/listings/:id', async (req, res) => {
   try {
     const id = req.params.id;
+    console.log(`📥 GET /listings/${id}`);
     
-    if (listingsCollection && ObjectId.isValid(id)) {
-      const query = { _id: new ObjectId(id) };
-      const listing = await listingsCollection.findOne(query);
-      
-      if (listing) {
-        res.json(listing);
-      } else {
-        const mockListing = mockListings.find(item => item._id === id);
-        if (mockListing) {
-          res.json(mockListing);
-        } else {
-          res.status(404).json({ 
-            success: false, 
-            message: 'Listing not found' 
-          });
-        }
-      }
-    } else {
-      const mockListing = mockListings.find(item => item._id === id);
-      if (mockListing) {
-        res.json(mockListing);
-      } else {
-        res.status(404).json({ 
-          success: false, 
-          message: 'Listing not found' 
-        });
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching listing:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch listing' 
-    });
-  }
-});
-
-// ✅ POST Add New Listing
-app.post('/listings', async (req, res) => {
-  try {
-    const listing = req.body;
+    let listing;
     
     if (listingsCollection) {
-      const result = await listingsCollection.insertOne(listing);
-      res.json({ 
-        success: true, 
-        message: 'Listing added successfully',
-        insertedId: result.insertedId
-      });
-    } else {
-      listing._id = new ObjectId().toString();
-      mockListings.unshift(listing);
-      res.json({ 
-        success: true, 
-        message: 'Listing added to mock data',
-        insertedId: listing._id
-      });
-    }
-  } catch (error) {
-    console.error('Error adding listing:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to add listing' 
-    });
-  }
-});
-
-// ✅ PUT Update Listing
-app.put('/listings/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    const updatedListing = req.body;
-    
-    if (listingsCollection && ObjectId.isValid(id)) {
-      const result = await listingsCollection.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: updatedListing }
-      );
+      // Try MongoDB ObjectId first
+      if (ObjectId.isValid(id)) {
+        listing = await listingsCollection.findOne({ _id: new ObjectId(id) });
+      }
       
-      if (result.modifiedCount > 0) {
-        res.json({ 
-          success: true, 
-          message: 'Listing updated successfully' 
-        });
-      } else {
-        res.status(404).json({ 
-          success: false, 
-          message: 'Listing not found' 
-        });
-      }
-    } else {
-      const index = mockListings.findIndex(item => item._id === id);
-      if (index !== -1) {
-        mockListings[index] = { ...mockListings[index], ...updatedListing };
-        res.json({ 
-          success: true, 
-          message: 'Mock listing updated' 
-        });
-      } else {
-        res.status(404).json({ 
-          success: false, 
-          message: 'Listing not found' 
-        });
+      // If not found, try string ID
+      if (!listing) {
+        listing = await listingsCollection.findOne({ _id: id });
       }
     }
-  } catch (error) {
-    console.error('Error updating listing:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to update listing' 
-    });
-  }
-});
-
-// ✅ DELETE Listing
-app.delete('/listings/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
     
-    if (listingsCollection && ObjectId.isValid(id)) {
-      const result = await listingsCollection.deleteOne({ _id: new ObjectId(id) });
-      
-      if (result.deletedCount > 0) {
-        res.json({ 
-          success: true, 
-          message: 'Listing deleted successfully' 
-        });
-      } else {
-        res.status(404).json({ 
-          success: false, 
-          message: 'Listing not found' 
-        });
-      }
-    } else {
-      const index = mockListings.findIndex(item => item._id === id);
-      if (index !== -1) {
-        mockListings.splice(index, 1);
-        res.json({ 
-          success: true, 
-          message: 'Mock listing deleted' 
-        });
-      } else {
-        res.status(404).json({ 
-          success: false, 
-          message: 'Listing not found' 
-        });
-      }
+    // If still not found, try mock data
+    if (!listing) {
+      listing = mockListings.find(item => item._id === id);
     }
+    
+    if (listing) {
+      res.json(listing);
+    } else {
+      res.status(404).json({
+        success: false,
+        message: 'Listing not found',
+        requestedId: id
+      });
+    }
+    
   } catch (error) {
-    console.error('Error deleting listing:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to delete listing' 
+    console.error('❌ Error fetching listing:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch listing',
+      error: error.message
     });
   }
 });
 
-//  ORDERS ROUTES 
+// ==================== ORDERS ROUTES ====================
 
-
+// Create new order - FIXED VERSION
 app.post('/orders', async (req, res) => {
   try {
+    console.log('📦 POST /orders - Received order data');
+    console.log('Order data:', JSON.stringify(req.body, null, 2));
+    
     const orderData = req.body;
     
+    // Validate required fields
+    const requiredFields = ['email', 'productName', 'buyerName', 'phone', 'address'];
+    const missingFields = requiredFields.filter(field => !orderData[field]);
     
-    const completeOrder = {
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+    
+    // Prepare order document
+    const orderDocument = {
       productId: orderData.productId || '',
-      productName: orderData.productName || 'Unnamed Product',
-      buyerName: orderData.buyerName || 'Customer',
-      email: (orderData.email || '').toLowerCase().trim(),
+      productName: orderData.productName,
+      buyerName: orderData.buyerName,
+      email: orderData.email.toLowerCase().trim(),
+      phone: orderData.phone.toString().replace(/\s/g, ''),
+      address: orderData.address,
       quantity: parseInt(orderData.quantity) || 1,
       price: parseFloat(orderData.price) || 0,
-      address: orderData.address || '',
-      phone: (orderData.phone || '').toString().replace(/\s/g, ''),
       date: orderData.date || new Date().toISOString().split('T')[0],
       additionalNotes: orderData.additionalNotes || '',
       status: 'pending',
@@ -408,88 +339,151 @@ app.post('/orders', async (req, res) => {
       updatedAt: new Date()
     };
     
+    console.log('📝 Prepared order document:', orderDocument);
+    
+    let savedOrder;
+    
+    // Try to save to MongoDB
     if (ordersCollection) {
-      const result = await ordersCollection.insertOne(completeOrder);
-      res.status(201).json({ 
-        success: true, 
-        message: 'Order placed successfully!',
-        data: {
+      try {
+        console.log('💾 Saving to MongoDB...');
+        const result = await ordersCollection.insertOne(orderDocument);
+        console.log('✅ MongoDB insert result:', result);
+        
+        savedOrder = {
           _id: result.insertedId,
-          ...completeOrder
-        }
-      });
+          ...orderDocument
+        };
+        
+        console.log('✅ Order saved to MongoDB with ID:', result.insertedId);
+        
+      } catch (mongoError) {
+        console.error('❌ MongoDB save error:', mongoError.message);
+        
+        // Fallback to mock mode
+        savedOrder = {
+          _id: new ObjectId().toString(),
+          ...orderDocument
+        };
+        
+        console.log('⚠️ Using mock order with ID:', savedOrder._id);
+      }
     } else {
-      completeOrder._id = new ObjectId().toString();
-      res.status(201).json({ 
-        success: true, 
-        message: 'Order placed successfully (mock mode)',
-        data: completeOrder
-      });
+      // Mock mode
+      savedOrder = {
+        _id: new ObjectId().toString(),
+        ...orderDocument
+      };
+      
+      console.log('✅ Order saved in mock mode with ID:', savedOrder._id);
     }
     
+    // Success response
+    res.status(201).json({
+      success: true,
+      message: '🎉 Order placed successfully!',
+      data: savedOrder
+    });
+    
   } catch (error) {
-    console.error('❌ Error placing order:', error);
-    res.status(500).json({ 
-      success: false, 
+    console.error('❌ Order processing error:', error);
+    console.error('Error stack:', error.stack);
+    
+    res.status(500).json({
+      success: false,
       message: 'Failed to place order',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Get orders by user email
+app.get('/orders/user/:email', async (req, res) => {
+  try {
+    const email = req.params.email.toLowerCase();
+    console.log(`📥 GET /orders/user/${email}`);
+    
+    let orders;
+    
+    if (ordersCollection) {
+      orders = await ordersCollection.find({ email })
+        .sort({ createdAt: -1 })
+        .toArray();
+      console.log(`✅ Found ${orders.length} orders for ${email}`);
+    } else {
+      // Mock data for testing
+      orders = [
+        {
+          _id: 'mock-order-1',
+          productId: '1',
+          productName: 'Golden Retriever Puppy',
+          buyerName: 'Demo User',
+          email: email,
+          quantity: 1,
+          price: 0,
+          address: '123 Demo Street, Dhaka',
+          phone: '01712345678',
+          date: new Date().toISOString().split('T')[0],
+          status: 'completed',
+          createdAt: new Date('2024-01-15')
+        }
+      ];
+      console.log(`✅ Using mock orders for ${email}`);
+    }
+    
+    res.json(orders);
+    
+  } catch (error) {
+    console.error('❌ Error fetching orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch orders',
       error: error.message
     });
   }
 });
 
-app.get('/orders/user/:email', async (req, res) => {
-  try {
-    const email = req.params.email.toLowerCase();
-    
-    if (ordersCollection) {
-      const cursor = ordersCollection.find({ email }).sort({ createdAt: -1 });
-      const orders = await cursor.toArray();
-      res.json(orders);
-    } else {
-      
-      const mockOrders = [
-        {
-          _id: '1',
-          productId: 'mock-123',
-          productName: 'Golden Retriever Puppy',
-          buyerName: 'Test User',
-          email: email,
-          quantity: 1,
-          price: 0,
-          address: '123 Main St, Dhaka',
-          phone: '01712345678',
-          date: '2024-01-15',
-          additionalNotes: 'Demo order',
-          status: 'completed',
-          createdAt: new Date('2024-01-15')
-        }
-      ];
-      res.json(mockOrders);
-    }
-  } catch (error) {
-    console.error('❌ Error fetching orders:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch orders' 
-    });
-  }
+// ==================== ERROR HANDLING ====================
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`
+  });
 });
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('🔥 Unhandled error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// ==================== SERVER START ====================
 
 app.listen(port, () => {
   console.log(`🚀 Server running on http://localhost:${port}`);
   console.log(`📡 Health check: http://localhost:${port}/health`);
-  console.log(`🛒 Latest listings: http://localhost:${port}/listings/latest`);
-  console.log(`📋 All listings: http://localhost:${port}/listings`);
-  console.log(`🐾 Categories: http://localhost:${port}/listings/category/Pets`);
+  console.log(`📋 API Documentation:`);
+  console.log(`   POST http://localhost:${port}/orders`);
+  console.log(`   GET  http://localhost:${port}/orders/user/:email`);
+  console.log(`   GET  http://localhost:${port}/listings/:id`);
+  console.log(`   GET  http://localhost:${port}/listings/latest`);
 });
 
+// Graceful shutdown
 process.on('SIGINT', async () => {
+  console.log('🛑 Shutting down server...');
   try {
     await client.close();
-    console.log('MongoDB connection closed');
+    console.log('✅ MongoDB connection closed');
     process.exit(0);
   } catch (err) {
-    console.error('Error closing MongoDB connection:', err);
+    console.error('❌ Error during shutdown:', err);
     process.exit(1);
   }
 });

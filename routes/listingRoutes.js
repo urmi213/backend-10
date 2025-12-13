@@ -1,47 +1,103 @@
 const express = require('express');
 const router = express.Router();
+const Order = require('../models/Order');
 
-const {
-  createListing,
-  getAllListings,
-  getListingById,
-  updateListing,
-  deleteListing,
-  getListingsByUser
-} = require('../controllers/listingController');
-
-router.get('/user/:email', getListingsByUser);
-
-router.get('/latest', async (req, res) => {
+// POST create new order
+router.post('/', async (req, res) => {
   try {
-    const db = req.app.locals.db;
-    const listingsCollection = db.collection('listings');
-
-    const listings = await listingsCollection
-      .find()
-      .sort({ _id: -1 })
-      .limit(6)
-      .toArray();
-
-    res.json({
+    console.log('📦 Creating new order:', req.body);
+    
+    const orderData = req.body;
+    
+    // Validate required fields
+    if (!orderData.email || !orderData.productName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and product name are required'
+      });
+    }
+    
+    // Create new order
+    const order = new Order(orderData);
+    await order.save();
+    
+    console.log(`✅ Order created successfully: ${order._id}`);
+    
+    res.status(201).json({
       success: true,
-      data: listings,
-      count: listings.length
+      message: 'Order placed successfully!',
+      data: order
     });
-
-  } catch (err) {
+    
+  } catch (error) {
+    console.error('❌ Error creating order:', error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch latest listings",
-      error: err.message
+      message: 'Failed to place order',
+      error: error.message
     });
   }
 });
 
-router.post('/', createListing);
-router.get('/', getAllListings);
-router.get('/:id', getListingById);
-router.put('/:id', updateListing);
-router.delete('/:id', deleteListing);
+// GET orders by user email
+router.get('/user/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+    
+    console.log(`🔍 Fetching orders for: ${email}`);
+    
+    const orders = await Order.find({ email: email }).sort({ createdAt: -1 });
+    
+    res.json({
+      success: true,
+      count: orders.length,
+      data: orders
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch orders',
+      error: error.message
+    });
+  }
+});
+
+// GET single order by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const order = await Order.findById(id);
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: order
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch order',
+      error: error.message
+    });
+  }
+});
 
 module.exports = router;

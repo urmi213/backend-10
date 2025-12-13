@@ -1,70 +1,89 @@
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
-  orderId: {
-    type: String,
-    unique: true
-  },
-  productId: {
-    type: String,
-    required: [true, 'Product ID is required']
-  },
+  // Product/Listing Info
   productName: {
     type: String,
-    required: [true, 'Product name is required']
-  },
-  buyerName: {
-    type: String,
-    required: [true, 'Buyer name is required']
-  },
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    lowercase: true,
+    required: true,
     trim: true
   },
-  quantity: {
-    type: Number,
+  listingId: {
+    type: String,
+    required: true
+  },
+  category: {
+    type: String,
     required: true,
-    min: [1, 'Quantity must be at least 1'],
-    default: 1
+    enum: ['Pets', 'Food', 'Accessories', 'Care Products', 'Other']
   },
   price: {
     type: Number,
-    required: [true, 'Price is required'],
-    min: [0, 'Price cannot be negative']
+    required: true,
+    min: 0,
+    default: 0
   },
-  address: {
+  
+  // Buyer Info
+  buyerName: {
     type: String,
-    required: [true, 'Address is required']
+    required: true,
+    trim: true
+  },
+  email: {
+    type: String,
+    required: true,
+    lowercase: true,
+    trim: true
   },
   phone: {
     type: String,
-    required: [true, 'Phone number is required']
+    required: true,
+    trim: true
   },
-  date: {
-    type: Date,
-    required: [true, 'Date is required']
-  },
-  additionalNotes: {
+  address: {
     type: String,
-    default: ''
+    required: true,
+    trim: true
   },
+  
+  // Order Details
+  quantity: {
+    type: Number,
+    required: true,
+    min: 1,
+    default: 1
+  },
+  totalAmount: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  
+  // Status
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
     default: 'pending'
+  },
+  
+  // Payment Info (optional)
+  paymentMethod: {
+    type: String,
+    enum: ['cod', 'online', 'card'],
+    default: 'cod'
   },
   paymentStatus: {
     type: String,
     enum: ['pending', 'paid', 'failed'],
     default: 'pending'
   },
-  createdAt: {
+  
+  // Timestamps
+  orderDate: {
     type: Date,
     default: Date.now
   },
-  updatedAt: {
+  createdAt: {
     type: Date,
     default: Date.now
   }
@@ -72,24 +91,13 @@ const orderSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Generate order ID before saving
+// Calculate total before saving
 orderSchema.pre('save', function(next) {
-  if (!this.orderId) {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 10000);
-    this.orderId = `ORD${timestamp}${random}`;
+  if (this.isModified('price') || this.isModified('quantity')) {
+    this.totalAmount = this.price * this.quantity;
   }
   next();
 });
-
-// Static method to get orders by buyer email
-orderSchema.statics.findByBuyerEmail = function(email, status = null) {
-  let query = { email: email.toLowerCase() };
-  if (status) {
-    query.status = status;
-  }
-  return this.find(query).sort({ createdAt: -1 });
-};
 
 const Order = mongoose.model('Order', orderSchema);
 
