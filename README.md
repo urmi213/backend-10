@@ -17,12 +17,6 @@ Example Endpoints:
 
 /listings/:id
 
-
-## Create a new order (POST request):
-
-/orders
-
-
 ## Get user orders by email:
 
 /orders/user/:email
