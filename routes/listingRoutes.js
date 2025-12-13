@@ -10,10 +10,8 @@ const {
   getListingsByUser
 } = require('../controllers/listingController');
 
-// Specific routes first
 router.get('/user/:email', getListingsByUser);
 
-// NEW latest listings route
 router.get('/latest', async (req, res) => {
   try {
     const db = req.app.locals.db;
@@ -40,7 +38,6 @@ router.get('/latest', async (req, res) => {
   }
 });
 
-// CRUD routes
 router.post('/', createListing);
 router.get('/', getAllListings);
 router.get('/:id', getListingById);

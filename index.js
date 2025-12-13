@@ -4,15 +4,11 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection URI
 const uri = "mongodb+srv://pawmart_user:RlJ9RGOVkxXSFL3z@petshopcluster.9k2rmcx.mongodb.net/pawmartDB?retryWrites=true&w=majority&appName=PetShopCluster";
 
-// Create a MongoClient
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -23,11 +19,9 @@ const client = new MongoClient(uri, {
   connectTimeoutMS: 10000,
 });
 
-// Collections
 let listingsCollection = null;
 let ordersCollection = null;
 
-// Mock data as fallback
 const mockListings = [
   {
     _id: '1',
@@ -103,7 +97,6 @@ const mockListings = [
   }
 ];
 
-// Connect to MongoDB
 async function connectToMongoDB() {
   try {
     await client.connect();
@@ -121,7 +114,6 @@ async function connectToMongoDB() {
       await database.createCollection('listings');
       console.log('📝 Created listings collection');
       
-      // Insert sample data
       if (await listingsCollection.countDocuments() === 0) {
         await listingsCollection.insertMany(mockListings);
         console.log('📝 Inserted sample listings');
@@ -131,8 +123,7 @@ async function connectToMongoDB() {
     if (!collectionNames.includes('orders')) {
       await database.createCollection('orders');
       console.log('📝 Created orders collection');
-      
-      // Create indexes for orders
+     
       await ordersCollection.createIndex({ email: 1 });
       await ordersCollection.createIndex({ createdAt: -1 });
       console.log('📝 Created indexes for orders collection');
@@ -145,7 +136,7 @@ async function connectToMongoDB() {
   }
 }
 
-// Initialize connection
+
 connectToMongoDB().then(isConnected => {
   if (isConnected) {
     console.log('✅ MongoDB ready');
@@ -154,14 +145,11 @@ connectToMongoDB().then(isConnected => {
   }
 });
 
-// ========== API ROUTES ==========
 
-// ✅ Root endpoint
 app.get('/', (req, res) => {
   res.send('PawMart Backend Server is Running! 🐾');
 });
 
-// ✅ Health Check - FIXED
 app.get('/health', (req, res) => {
   const mongoStatus = listingsCollection ? 'Connected' : 'Disconnected';
   res.json({ 
@@ -177,9 +165,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ========== LISTINGS ROUTES ==========
 
-// ✅ GET Latest 6 Listings (Home Page) - FIXED
 app.get('/listings/latest', async (req, res) => {
   try {
     console.log('📥 GET /listings/latest requested');
@@ -201,7 +187,6 @@ app.get('/listings/latest', async (req, res) => {
   }
 });
 
-// ✅ GET All Listings
 app.get('/listings', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
@@ -219,7 +204,6 @@ app.get('/listings', async (req, res) => {
   }
 });
 
-// ✅ GET Listings by Category
 app.get('/listings/category/:category', async (req, res) => {
   try {
     const category = req.params.category;
@@ -239,7 +223,6 @@ app.get('/listings/category/:category', async (req, res) => {
   }
 });
 
-// ✅ GET Single Listing by ID
 app.get('/listings/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -401,14 +384,14 @@ app.delete('/listings/:id', async (req, res) => {
   }
 });
 
-// ========== ORDERS ROUTES ==========
+//  ORDERS ROUTES 
 
-// ✅ POST Place Order
+
 app.post('/orders', async (req, res) => {
   try {
     const orderData = req.body;
     
-    // Prepare complete order document
+    
     const completeOrder = {
       productId: orderData.productId || '',
       productName: orderData.productName || 'Unnamed Product',
@@ -454,7 +437,6 @@ app.post('/orders', async (req, res) => {
   }
 });
 
-// ✅ GET User Orders
 app.get('/orders/user/:email', async (req, res) => {
   try {
     const email = req.params.email.toLowerCase();
@@ -464,7 +446,7 @@ app.get('/orders/user/:email', async (req, res) => {
       const orders = await cursor.toArray();
       res.json(orders);
     } else {
-      // Mock orders
+      
       const mockOrders = [
         {
           _id: '1',
@@ -493,7 +475,6 @@ app.get('/orders/user/:email', async (req, res) => {
   }
 });
 
-// Start server
 app.listen(port, () => {
   console.log(`🚀 Server running on http://localhost:${port}`);
   console.log(`📡 Health check: http://localhost:${port}/health`);
@@ -502,7 +483,6 @@ app.listen(port, () => {
   console.log(`🐾 Categories: http://localhost:${port}/listings/category/Pets`);
 });
 
-// Handle graceful shutdown
 process.on('SIGINT', async () => {
   try {
     await client.close();

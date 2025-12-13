@@ -2,10 +2,8 @@ const mongoose = require('mongoose');
 const Listing = require('./models/Listing');
 const Order = require('./models/Order');
 
-// MongoDB connection
 const MONGODB_URI = 'mongodb://localhost:27017/pawmart';
 
-// Sample data
 const sampleListings = [
   {
     name: "Golden Retriever Puppy",
@@ -107,7 +105,7 @@ const sampleListings = [
 
 const sampleOrders = [
   {
-    productId: null, // Will be set after listings are created
+    productId: null, 
     productName: "Golden Retriever Puppy",
     buyerName: "Mr. Ahmed Rahman",
     email: "ahmed.rahman@example.com",
@@ -121,7 +119,7 @@ const sampleOrders = [
     paymentMethod: "cash"
   },
   {
-    productId: null, // Will be set after listings are created
+    productId: null, 
     productName: "Premium Dog Food - 5kg",
     buyerName: "Ms. Fatima Begum",
     email: "fatima.begum@example.com",
@@ -136,7 +134,7 @@ const sampleOrders = [
     paymentStatus: "paid"
   },
   {
-    productId: null, // Will be set after listings are created
+    productId: null, 
     productName: "Persian Kitten - White",
     buyerName: "Mr. Karim Ahmed",
     email: "karim.ahmed@example.com",
@@ -157,20 +155,16 @@ async function seedDatabase() {
     console.log('🌱 STARTING DATABASE SEEDING');
     console.log('='.repeat(50));
     
-    // Connect to MongoDB
     await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB');
     
-    // Clear existing data
     await Listing.deleteMany({});
     await Order.deleteMany({});
     console.log('🗑️  Cleared existing data');
     
-    // Insert sample listings
     const createdListings = await Listing.insertMany(sampleListings);
     console.log(`✅ Created ${createdListings.length} listings`);
     
-    // Update orders with actual product IDs
     const updatedOrders = sampleOrders.map((order, index) => {
       const listingIndex = index % createdListings.length;
       return {
@@ -179,18 +173,15 @@ async function seedDatabase() {
       };
     });
     
-    // Insert sample orders
     const createdOrders = await Order.insertMany(updatedOrders);
     console.log(`✅ Created ${createdOrders.length} orders`);
-    
-    // Update listing status for ordered items
+   
     for (const order of createdOrders) {
       await Listing.findByIdAndUpdate(order.productId, { 
         status: 'pending' 
       });
     }
     
-    // Display summary
     console.log('\n📊 SEEDING SUMMARY:');
     console.log('='.repeat(30));
     console.log(`Listings: ${createdListings.length}`);
@@ -229,5 +220,4 @@ async function seedDatabase() {
   }
 }
 
-// Run seeding
 seedDatabase();

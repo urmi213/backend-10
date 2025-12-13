@@ -1,6 +1,5 @@
 const Listing = require('../models/Listing');
 
-// Helper function to transform listing data
 const transformListing = (listing) => {
   const listingObj = listing.toObject ? listing.toObject() : listing;
   return {
@@ -15,12 +14,10 @@ const transformListing = (listing) => {
   };
 };
 
-// Create listing
 const createListing = async (req, res) => {
   try {
     const data = { ...req.body };
-    
-    // Ensure required fields
+   
     if (!data.title || data.title.trim() === '') {
       return res.status(400).json({ 
         success: false, 
@@ -28,12 +25,10 @@ const createListing = async (req, res) => {
       });
     }
     
-    // Add name field from title if not provided
     if (!data.name || data.name.trim() === '') {
       data.name = data.title;
     }
     
-    // Ensure image field is not empty string
     if (data.image === '') {
       data.image = null;
     }
@@ -58,32 +53,27 @@ const createListing = async (req, res) => {
   }
 };
 
-// Get all listings
 const getAllListings = async (req, res) => {
   try {
     const { limit, category, search } = req.query;
     let query = { status: 'active' };
     
-    // Category filter
     if (category) {
       query.category = category;
     }
     
-    // Search filter
     if (search) {
       query.$text = { $search: search };
     }
     
     let listingsQuery = Listing.find(query).sort({ createdAt: -1 });
     
-    // Limit results
     if (limit) {
       listingsQuery = listingsQuery.limit(parseInt(limit));
     }
     
     const listings = await listingsQuery;
     
-    // Transform listings to ensure consistent structure
     const transformedListings = listings.map(listing => transformListing(listing));
     
     res.json({ 
@@ -99,7 +89,6 @@ const getAllListings = async (req, res) => {
   }
 };
 
-// Get single listing by ID
 const getListingById = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
@@ -124,17 +113,14 @@ const getListingById = async (req, res) => {
   }
 };
 
-// Update listing
 const updateListing = async (req, res) => {
   try {
     const updates = req.body;
-    
-    // Ensure name field if title is updated
+   
     if (updates.title && (!updates.name || updates.name.trim() === '')) {
       updates.name = updates.title;
     }
     
-    // Ensure image is not empty string
     if (updates.image === '') {
       updates.image = null;
     }
@@ -171,7 +157,6 @@ const updateListing = async (req, res) => {
   }
 };
 
-// Delete listing
 const deleteListing = async (req, res) => {
   try {
     const deleted = await Listing.findByIdAndDelete(req.params.id);
@@ -194,7 +179,6 @@ const deleteListing = async (req, res) => {
   }
 };
 
-// Get listings by user email
 const getListingsByUser = async (req, res) => {
   try {
     const email = req.params.email;
@@ -217,10 +201,9 @@ const getListingsByUser = async (req, res) => {
   }
 };
 
-// Health check endpoint
 const healthCheck = async (req, res) => {
   try {
-    // Test database connection
+    
     await Listing.findOne();
     
     res.json({ 
