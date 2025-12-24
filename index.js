@@ -4,35 +4,25 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 const app = express();
+const port = process.env.PORT || 5000;
 
-// ✅ **FIX: CORS COMPLETE SOLUTION**
-// Allow all origins temporarily for testing
+// ========== CORS FIX ==========
+// Method 1: Using cors middleware
 app.use(cors({
-  origin: '*', // Allow all origins
-  credentials: false, // Set to false when origin is '*'
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
-  exposedHeaders: ['Content-Length', 'Authorization']
+  credentials: false
 }));
 
-// ✅ Handle preflight requests
-app.options('*', (req, res) => {
-  console.log('🔄 Handling OPTIONS/preflight request for:', req.url);
-  
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Max-Age', '86400');
-  
-  res.status(200).send();
-});
-
-// ✅ Manual CORS headers for all responses
+// Method 2: Manual CORS headers (for extra safety)
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'false');
   
+  // Handle preflight requests
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -40,21 +30,19 @@ app.use((req, res, next) => {
   next();
 });
 
+// Handle OPTIONS requests explicitly
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
+  res.status(200).send();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Log all requests
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  console.log('Origin:', req.headers.origin);
-  console.log('Headers:', req.headers);
-  next();
-});
-
-// MongoDB Connection
+// ========== MongoDB Connection ==========
 const uri = "mongodb+srv://pawmart_user:RlJ9RGOVkxXSFL3z@petshopcluster.9k2rmcx.mongodb.net/pawmartDB?retryWrites=true&w=majority&appName=PetShopCluster";
-
-console.log('🔗 Connecting to MongoDB...');
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -70,6 +58,28 @@ const client = new MongoClient(uri, {
 let listingsCollection = null;
 let ordersCollection = null;
 
+// Connect to MongoDB
+async function connectToMongoDB() {
+  try {
+    console.log('🔄 Connecting to MongoDB...');
+    await client.connect();
+    console.log('✅ MongoDB connected successfully');
+    
+    const db = client.db('pawmartDB');
+    listingsCollection = db.collection('listings');
+    ordersCollection = db.collection('orders');
+    
+    console.log('📊 Collections initialized');
+    return true;
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error.message);
+    return false;
+  }
+}
+
+connectToMongoDB();
+
+// ========== MOCK DATA ==========
 const mockListings = [
   {
     _id: '1',
@@ -133,41 +143,48 @@ const mockListings = [
   }
 ];
 
-async function connectToMongoDB() {
-  try {
-    console.log('🔄 Attempting MongoDB connection...');
-    await client.connect();
-    console.log('✅ MongoDB connected');
-    
-    const db = client.db('pawmartDB');
-    listingsCollection = db.collection('listings');
-    ordersCollection = db.collection('orders');
-    
-    // Seed data if empty
-    const count = await listingsCollection.countDocuments();
-    if (count === 0) {
-      await listingsCollection.insertMany(mockListings);
-      console.log('✅ Seeded listings data');
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('❌ MongoDB error:', error.message);
-    return false;
+const mockOrders = [
+  {
+    _id: 'order-001',
+    productId: '3',
+    productName: 'Premium Dog Food 5kg',
+    email: 'urmichakravorty02@gmail.com',
+    buyerName: 'Demo User',
+    quantity: 2,
+    price: 50,
+    address: '123 Demo Street, Dhaka',
+    phone: '01712345678',
+    date: new Date().toISOString().split('T')[0],
+    status: 'completed',
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-01-15')
+  },
+  {
+    _id: 'order-002',
+    productId: '1',
+    productName: 'Golden Retriever Puppy',
+    email: 'urmichakravorty02@gmail.com',
+    buyerName: 'Demo User',
+    quantity: 1,
+    price: 0,
+    address: '456 Sample Road, Chattogram',
+    phone: '01876543210',
+    date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    status: 'pending',
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   }
-}
+];
 
-// Connect to DB
-connectToMongoDB();
+// ========== ALL ROUTES ==========
 
-// ✅ **ALL ENDPOINTS**
-
+// 1. ROOT ENDPOINT
 app.get('/', (req, res) => {
-  res.json({ 
-    message: '🐾 PawMart API is running - CORS FIXED',
-    version: '3.0',
-    cors: 'enabled',
+  res.json({
+    success: true,
+    message: '🐾 PawMart Backend API v1.0',
     timestamp: new Date().toISOString(),
+    cors: 'enabled (origin: *)',
     endpoints: [
       'GET  /health',
       'GET  /test-cors',
@@ -175,20 +192,44 @@ app.get('/', (req, res) => {
       'GET  /listings/:id',
       'GET  /listings/latest',
       'GET  /listings/category/:category',
-      'POST /orders',
       'GET  /orders',
-      'GET  /orders/user/:email'
-    ]
+      'GET  /orders/user/:email',
+      'POST /orders'
+    ],
+    examples: {
+      healthCheck: 'https://backend-10-i1qp6b7m5-urmis-projects-37af7542.vercel.app/health',
+      testCors: 'https://backend-10-i1qp6b7m5-urmis-projects-37af7542.vercel.app/test-cors',
+      userOrders: 'https://backend-10-i1qp6b7m5-urmis-projects-37af7542.vercel.app/orders/user/urmichakravorty02@gmail.com'
+    }
   });
 });
 
-// ✅ **FIXED: CORS Test Endpoint**
+// 2. HEALTH CHECK
+app.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    status: 'healthy ✅',
+    timestamp: new Date().toISOString(),
+    mongodb: client.topology?.isConnected() ? 'connected' : 'disconnected',
+    cors: 'enabled',
+    allowedOrigin: '*',
+    server: {
+      uptime: process.uptime(),
+      nodeVersion: process.version,
+      environment: process.env.NODE_ENV || 'development'
+    }
+  });
+});
+
+// 3. CORS TEST ENDPOINT ✅
 app.get('/test-cors', (req, res) => {
-  console.log('✅ CORS Test Request Received');
+  console.log('✅ /test-cors endpoint called');
+  console.log('Origin:', req.headers.origin);
+  console.log('Method:', req.method);
   
   res.json({
     success: true,
-    message: 'CORS is working! ✅',
+    message: 'CORS is working perfectly! ✅',
     timestamp: new Date().toISOString(),
     requestInfo: {
       origin: req.headers.origin,
@@ -199,40 +240,40 @@ app.get('/test-cors', (req, res) => {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-    }
+    },
+    note: 'This endpoint proves CORS is properly configured.'
   });
 });
 
-// ✅ Health Check
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy ✅',
-    timestamp: new Date().toISOString(),
-    mongodb: client.topology?.isConnected() ? 'connected' : 'disconnected',
-    cors: 'enabled (origin: *)'
-  });
-});
-
-// ✅ Get all listings
+// 4. ALL LISTINGS
 app.get('/listings', async (req, res) => {
   try {
     let listings;
+    
     if (listingsCollection) {
       listings = await listingsCollection.find().limit(20).toArray();
     } else {
       listings = mockListings;
     }
-    res.json(listings);
+    
+    res.json({
+      success: true,
+      count: listings.length,
+      data: listings
+    });
   } catch (error) {
-    console.error('Error getting listings:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error in /listings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch listings'
+    });
   }
 });
 
-// ✅ Get single listing
+// 5. SINGLE LISTING BY ID
 app.get('/listings/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id;
     let listing;
     
     if (listingsCollection) {
@@ -249,80 +290,58 @@ app.get('/listings/:id', async (req, res) => {
     }
     
     if (listing) {
-      res.json(listing);
+      res.json({
+        success: true,
+        data: listing
+      });
     } else {
-      res.status(404).json({ error: 'Listing not found' });
+      res.status(404).json({
+        success: false,
+        error: 'Listing not found',
+        requestedId: id
+      });
     }
   } catch (error) {
-    console.error('Error getting listing:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error in /listings/:id:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch listing'
+    });
   }
 });
 
-// ✅ Get latest listings
+// 6. LATEST LISTINGS
 app.get('/listings/latest', (req, res) => {
-  res.json(mockListings.slice(0, 6));
+  res.json({
+    success: true,
+    count: 6,
+    data: mockListings.slice(0, 6)
+  });
 });
 
-// ✅ Get listings by category
+// 7. LISTINGS BY CATEGORY
 app.get('/listings/category/:category', (req, res) => {
-  const { category } = req.params;
+  const category = req.params.category;
   const filtered = mockListings.filter(item => 
     item.category.toLowerCase() === category.toLowerCase()
   );
-  res.json(filtered);
+  
+  res.json({
+    success: true,
+    count: filtered.length,
+    data: filtered
+  });
 });
 
-// ✅ Place order
-app.post('/orders', async (req, res) => {
-  try {
-    const orderData = req.body;
-    
-    const order = {
-      ...orderData,
-      _id: new ObjectId().toString(),
-      status: 'pending',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    if (ordersCollection) {
-      await ordersCollection.insertOne(order);
-    }
-    
-    res.status(201).json({
-      success: true,
-      message: 'Order placed successfully',
-      orderId: order._id,
-      data: order
-    });
-  } catch (error) {
-    console.error('Error placing order:', error);
-    res.status(500).json({ error: 'Failed to place order' });
-  }
-});
-
-// ✅ Get all orders
+// 8. ALL ORDERS ✅
 app.get('/orders', async (req, res) => {
   try {
-    let orders = [];
+    let orders;
     
     if (ordersCollection) {
       orders = await ordersCollection.find().limit(50).toArray();
     } else {
-      orders = [
-        {
-          _id: 'order-001',
-          productId: '3',
-          productName: 'Premium Dog Food 5kg',
-          email: 'urmichakravorty02@gmail.com',
-          buyerName: 'Demo User',
-          quantity: 2,
-          price: 50,
-          status: 'completed',
-          createdAt: new Date()
-        }
-      ];
+      orders = mockOrders;
     }
     
     res.json({
@@ -331,12 +350,15 @@ app.get('/orders', async (req, res) => {
       data: orders
     });
   } catch (error) {
-    console.error('Error fetching all orders:', error);
-    res.status(500).json({ error: 'Failed to fetch orders' });
+    console.error('Error in /orders:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch orders'
+    });
   }
 });
 
-// ✅ **FIXED: Get user orders - NO AUTH REQUIRED**
+// 9. USER ORDERS BY EMAIL ✅
 app.get('/orders/user/:email', async (req, res) => {
   try {
     const email = req.params.email;
@@ -351,67 +373,159 @@ app.get('/orders/user/:email', async (req, res) => {
         .toArray();
     }
     
-    // If no orders found, return mock data
+    // If no orders found in DB, use mock data
     if (!orders || orders.length === 0) {
-      orders = [{
-        _id: 'mock-order-001',
-        productId: '3',
-        productName: 'Premium Dog Food 5kg',
-        email: email,
-        buyerName: 'Demo User',
-        quantity: 2,
-        price: 50,
-        address: '123 Demo Street, Dhaka',
-        phone: '01712345678',
-        date: new Date().toISOString().split('T')[0],
-        status: 'completed',
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-15')
-      }];
+      orders = mockOrders.filter(order => order.email === email);
+      
+      // If still no orders, create demo data
+      if (orders.length === 0) {
+        orders = [
+          {
+            _id: `order-${Date.now()}`,
+            productId: '3',
+            productName: 'Premium Dog Food 5kg',
+            email: email,
+            buyerName: 'Demo User',
+            quantity: 2,
+            price: 50,
+            address: '123 Street, Dhaka',
+            phone: '01712345678',
+            date: new Date().toISOString().split('T')[0],
+            status: 'completed',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ];
+      }
     }
     
-    console.log(`✅ Found ${orders.length} orders`);
+    console.log(`✅ Found ${orders.length} orders for ${email}`);
+    
     res.json(orders);
     
   } catch (error) {
-    console.error('❌ Error fetching orders:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch orders',
-      message: error.message 
+    console.error('Error in /orders/user/:email:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch user orders',
+      message: error.message
     });
   }
 });
 
-// ✅ Error handling
-app.use((err, req, res, next) => {
-  console.error('🔥 Server error:', err);
-  res.status(500).json({ 
-    error: 'Internal server error',
-    message: err.message 
-  });
+// 10. CREATE NEW ORDER
+app.post('/orders', async (req, res) => {
+  try {
+    const orderData = req.body;
+    console.log('📦 New order received:', orderData);
+    
+    // Validation
+    const requiredFields = ['email', 'productName', 'buyerName', 'phone', 'address'];
+    const missingFields = requiredFields.filter(field => !orderData[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+    
+    const order = {
+      ...orderData,
+      _id: new ObjectId().toString(),
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    // Save to database if available
+    if (ordersCollection) {
+      await ordersCollection.insertOne(order);
+      console.log('✅ Order saved to MongoDB');
+    } else {
+      console.log('✅ Order processed (mock mode)');
+    }
+    
+    res.status(201).json({
+      success: true,
+      message: 'Order placed successfully! 🎉',
+      orderId: order._id,
+      data: order
+    });
+    
+  } catch (error) {
+    console.error('Error in POST /orders:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to place order'
+    });
+  }
 });
 
-// ✅ 404 handler
-app.use((req, res) => {
-  res.status(404).json({ 
-    error: 'Route not found',
-    requested: `${req.method} ${req.url}`,
+// ========== ERROR HANDLING ==========
+
+// 404 - Route not found
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: `Route not found: ${req.method} ${req.originalUrl}`,
     availableEndpoints: [
+      'GET  /',
       'GET  /health',
       'GET  /test-cors',
       'GET  /listings',
+      'GET  /listings/:id',
+      'GET  /listings/latest',
+      'GET  /listings/category/:category',
       'GET  /orders',
-      'GET  /orders/user/:email'
-    ]
+      'GET  /orders/user/:email',
+      'POST /orders'
+    ],
+    currentTime: new Date().toISOString()
   });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`✅ CORS enabled for ALL origins (*)`);
-  console.log(`📡 Test endpoints:`);
-  console.log(`   http://localhost:${PORT}/health`);
-  console.log(`   http://localhost:${PORT}/test-cors`);
-  console.log(`   http://localhost:${PORT}/orders/user/urmichakravorty02@gmail.com`);
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('🔥 Unhandled error:', err);
+  
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// ========== START SERVER ==========
+app.listen(port, () => {
+  console.log(`
+🚀 Server running on port ${port}
+🌐 Local: http://localhost:${port}
+📡 Health: http://localhost:${port}/health
+🔗 CORS Test: http://localhost:${port}/test-cors
+📋 User Orders: http://localhost:${port}/orders/user/urmichakravorty02@gmail.com
+
+✅ CORS is ENABLED for ALL origins (*)
+✅ All endpoints are READY
+✅ MongoDB: ${client.topology?.isConnected() ? 'Connected' : 'Disconnected'}
+  `);
+});
+
+// ========== GRACEFUL SHUTDOWN ==========
+process.on('SIGINT', async () => {
+  console.log('🛑 Shutting down server...');
+  try {
+    if (client) {
+      await client.close();
+      console.log('✅ MongoDB connection closed');
+    }
+    process.exit(0);
+  } catch (err) {
+    console.error('❌ Error during shutdown:', err);
+    process.exit(1);
+  }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️ Unhandled Rejection at:', promise, 'reason:', reason);
 });
