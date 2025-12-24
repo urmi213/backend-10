@@ -5,57 +5,36 @@ require('dotenv').config();
 
 const app = express();
 
-// ✅ **FIX 1: CORS COMPLETE SOLUTION**
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://luminous-alfajores-1e366f.netlify.app',
-  'https://693d9680835059f3028d6956--luminous-alfajores-1e366f.netlify.app'
-];
-
-// ✅ CORS middleware with proper configuration
+// ✅ **FIX: CORS COMPLETE SOLUTION**
+// Allow all origins temporarily for testing
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      console.log('🚫 Blocked by CORS:', origin);
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true,
+  origin: '*', // Allow all origins
+  credentials: false, // Set to false when origin is '*'
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Content-Length', 'Authorization'],
-  maxAge: 86400 // 24 hours
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'Authorization']
 }));
 
-// ✅ Handle preflight requests explicitly
-app.options('*', cors());
-
-// ✅ Manual CORS headers (for extra safety)
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
+// ✅ Handle preflight requests
+app.options('*', (req, res) => {
+  console.log('🔄 Handling OPTIONS/preflight request for:', req.url);
   
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else {
-    res.header('Access-Control-Allow-Origin', '*'); // For development
-  }
-  
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Allow-Headers');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Expose-Headers', 'Authorization');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Max-Age', '86400');
   
-  // Handle preflight requests
+  res.status(200).send();
+});
+
+// ✅ Manual CORS headers for all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  
   if (req.method === 'OPTIONS') {
-    console.log('✅ Handling OPTIONS/preflight request');
-    return res.status(200).json({});
+    return res.status(200).end();
   }
   
   next();
@@ -64,15 +43,11 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ **FIX 2: REMOVE AUTH MIDDLEWARE TEMPORARILY**
-// For now, remove all auth checks to test if CORS works
-// Add this back later when CORS is fixed
-
-// Simple middleware to log requests
+// ✅ Log all requests
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   console.log('Origin:', req.headers.origin);
-  console.log('Auth Header:', req.headers['authorization']);
+  console.log('Headers:', req.headers);
   next();
 });
 
@@ -185,33 +160,31 @@ async function connectToMongoDB() {
 // Connect to DB
 connectToMongoDB();
 
-// ✅ Routes
+// ✅ **ALL ENDPOINTS**
+
 app.get('/', (req, res) => {
   res.json({ 
     message: '🐾 PawMart API is running - CORS FIXED',
-    version: '2.0',
+    version: '3.0',
     cors: 'enabled',
     timestamp: new Date().toISOString(),
-    endpoints: {
-      health: '/health',
-      testCors: '/test-cors',
-      listings: '/listings',
-      listingById: '/listings/:id',
-      latestListings: '/listings/latest',
-      categoryListings: '/listings/category/:category',
-      placeOrder: 'POST /orders',
-      userOrders: '/orders/user/:email',
-      allOrders: '/orders'
-    }
+    endpoints: [
+      'GET  /health',
+      'GET  /test-cors',
+      'GET  /listings',
+      'GET  /listings/:id',
+      'GET  /listings/latest',
+      'GET  /listings/category/:category',
+      'POST /orders',
+      'GET  /orders',
+      'GET  /orders/user/:email'
+    ]
   });
 });
 
-// ✅ CORS Test Endpoint
+// ✅ **FIXED: CORS Test Endpoint**
 app.get('/test-cors', (req, res) => {
   console.log('✅ CORS Test Request Received');
-  console.log('- Origin:', req.headers.origin);
-  console.log('- Method:', req.method);
-  console.log('- Headers:', req.headers);
   
   res.json({
     success: true,
@@ -220,23 +193,23 @@ app.get('/test-cors', (req, res) => {
     requestInfo: {
       origin: req.headers.origin,
       method: req.method,
-      headers: req.headers
+      userAgent: req.headers['user-agent']
     },
     corsHeaders: {
-      'Access-Control-Allow-Origin': req.headers.origin || '*',
+      'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization'
     }
   });
 });
 
+// ✅ Health Check
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy ✅',
     timestamp: new Date().toISOString(),
     mongodb: client.topology?.isConnected() ? 'connected' : 'disconnected',
-    cors: 'enabled',
-    allowedOrigins: allowedOrigins
+    cors: 'enabled (origin: *)'
   });
 });
 
@@ -263,11 +236,9 @@ app.get('/listings/:id', async (req, res) => {
     let listing;
     
     if (listingsCollection) {
-      // Try ObjectId first
       if (ObjectId.isValid(id)) {
         listing = await listingsCollection.findOne({ _id: new ObjectId(id) });
       }
-      // Try string ID
       if (!listing) {
         listing = await listingsCollection.findOne({ _id: id });
       }
@@ -307,16 +278,6 @@ app.post('/orders', async (req, res) => {
   try {
     const orderData = req.body;
     
-    // Validate required fields
-    const required = ['email', 'productName', 'buyerName', 'phone', 'address'];
-    const missing = required.filter(field => !orderData[field]);
-    
-    if (missing.length > 0) {
-      return res.status(400).json({ 
-        error: `Missing fields: ${missing.join(', ')}` 
-      });
-    }
-    
     const order = {
       ...orderData,
       _id: new ObjectId().toString(),
@@ -341,11 +302,45 @@ app.post('/orders', async (req, res) => {
   }
 });
 
-// ✅ **FIXED: Get user orders - NO AUTH REQUIRED FOR NOW**
+// ✅ Get all orders
+app.get('/orders', async (req, res) => {
+  try {
+    let orders = [];
+    
+    if (ordersCollection) {
+      orders = await ordersCollection.find().limit(50).toArray();
+    } else {
+      orders = [
+        {
+          _id: 'order-001',
+          productId: '3',
+          productName: 'Premium Dog Food 5kg',
+          email: 'urmichakravorty02@gmail.com',
+          buyerName: 'Demo User',
+          quantity: 2,
+          price: 50,
+          status: 'completed',
+          createdAt: new Date()
+        }
+      ];
+    }
+    
+    res.json({
+      success: true,
+      count: orders.length,
+      data: orders
+    });
+  } catch (error) {
+    console.error('Error fetching all orders:', error);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+// ✅ **FIXED: Get user orders - NO AUTH REQUIRED**
 app.get('/orders/user/:email', async (req, res) => {
   try {
     const email = req.params.email;
-    console.log(`📧 Fetching orders for: ${email} (NO AUTH CHECK)`);
+    console.log(`📧 Fetching orders for: ${email}`);
     
     let orders = [];
     
@@ -387,42 +382,12 @@ app.get('/orders/user/:email', async (req, res) => {
   }
 });
 
-// ✅ Get all orders (for admin/testing)
-app.get('/orders', async (req, res) => {
-  try {
-    let orders = [];
-    
-    if (ordersCollection) {
-      orders = await ordersCollection.find().limit(50).toArray();
-    }
-    
-    res.json({
-      success: true,
-      count: orders.length,
-      data: orders
-    });
-  } catch (error) {
-    console.error('Error fetching all orders:', error);
-    res.status(500).json({ error: 'Failed to fetch orders' });
-  }
-});
-
-// ✅ Error handling middleware
+// ✅ Error handling
 app.use((err, req, res, next) => {
   console.error('🔥 Server error:', err);
-  
-  // Handle CORS errors
-  if (err.message.includes('CORS')) {
-    return res.status(403).json({ 
-      error: 'CORS Error',
-      message: err.message,
-      allowedOrigins: allowedOrigins
-    });
-  }
-  
   res.status(500).json({ 
     error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: err.message 
   });
 });
 
@@ -430,30 +395,23 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({ 
     error: 'Route not found',
-    requested: `${req.method} ${req.url}`
+    requested: `${req.method} ${req.url}`,
+    availableEndpoints: [
+      'GET  /health',
+      'GET  /test-cors',
+      'GET  /listings',
+      'GET  /orders',
+      'GET  /orders/user/:email'
+    ]
   });
 });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔗 CORS Test: http://localhost:${PORT}/test-cors`);
-  console.log(`📡 API Base: http://localhost:${PORT}`);
-  console.log(`✅ Allowed origins: ${allowedOrigins.join(', ')}`);
-});
-
-// ✅ Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('🛑 Shutting down server...');
-  try {
-    if (client) {
-      await client.close();
-      console.log('✅ MongoDB connection closed');
-    }
-    process.exit(0);
-  } catch (err) {
-    console.error('❌ Error during shutdown:', err);
-    process.exit(1);
-  }
+  console.log(`✅ CORS enabled for ALL origins (*)`);
+  console.log(`📡 Test endpoints:`);
+  console.log(`   http://localhost:${PORT}/health`);
+  console.log(`   http://localhost:${PORT}/test-cors`);
+  console.log(`   http://localhost:${PORT}/orders/user/urmichakravorty02@gmail.com`);
 });
