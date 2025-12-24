@@ -1,21 +1,26 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require("cookie-parser");
+const bodyParser = require("body-parser");
+
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-// ========== CORS FIX ==========
-// Method 1: Using cors middleware
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
-  credentials: false
-}));
 
-// Method 2: Manual CORS headers (for extra safety)
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+
+      "https://693d9680835059f3028d6956--luminous-alfajores-1e366f.netlify.app/",
+    ],
+    credentials: true,
+  })
+);
+
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
@@ -39,6 +44,9 @@ app.options('*', (req, res) => {
 });
 
 app.use(express.json());
+app.use(cookieParser());
+app.use(bodyParser.json());
+
 app.use(express.urlencoded({ extended: true }));
 
 // ========== MongoDB Connection ==========
