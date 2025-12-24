@@ -9,44 +9,36 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-
-      "https://693d9680835059f3028d6956--luminous-alfajores-1e366f.netlify.app/",
-    ],
-    credentials: true,
-  })
-);
-
+// ========== CORS CONFIGURATION - FIXED ==========
+// সরাসরি CORS headers set করুন
 app.use((req, res, next) => {
+  // Allow all origins for development
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'false');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Max-Age', '86400');
     return res.status(200).end();
   }
   
   next();
 });
 
-// Handle OPTIONS requests explicitly
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
-  res.status(200).send();
-});
+// Additional CORS middleware
+app.use(cors({
+  origin: '*',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
+}));
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(bodyParser.json());
-
 app.use(express.urlencoded({ extended: true }));
 
 // ========== MongoDB Connection ==========
@@ -87,103 +79,6 @@ async function connectToMongoDB() {
 
 connectToMongoDB();
 
-// ========== MOCK DATA ==========
-const mockListings = [
-  {
-    _id: '1',
-    name: 'Golden Retriever Puppy',
-    category: 'Pets',
-    price: 0,
-    location: 'Dhaka',
-    image: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?w=800&auto=format&fit=crop&q=80',
-    description: 'Friendly 3-month-old puppy, vaccinated and ready for adoption',
-    sellerName: 'Pet Care Center',
-    email: 'petcare@example.com',
-    date: '2025-10-27'
-  },
-  {
-    _id: '2',
-    name: 'Persian Kitten',
-    category: 'Pets',
-    price: 150,
-    location: 'Chattogram',
-    image: 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=800&auto=format&fit=crop&q=80',
-    description: 'Beautiful white Persian kitten, 2 months old',
-    sellerName: 'Cat Lovers Hub',
-    email: 'catlover@example.com',
-    date: '2025-10-28'
-  },
-  {
-    _id: '3',
-    name: 'Premium Dog Food 5kg',
-    category: 'Food',
-    price: 25,
-    location: 'Sylhet',
-    image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=800&auto=format&fit=crop&q=80',
-    description: 'High-quality dog food with natural ingredients',
-    sellerName: 'Pet Food Store',
-    email: 'petfood@example.com',
-    date: '2025-10-29'
-  },
-  {
-    _id: '4',
-    name: 'Organic Pet Shampoo',
-    category: 'Care Products',
-    price: 15,
-    location: 'Rajshahi',
-    image: 'https://images.unsplash.com/photo-1560743641-3914f2c45636?w=800&auto=format&fit=crop&q=80',
-    description: 'Gentle shampoo for sensitive skin pets',
-    sellerName: 'Pet Care Mart',
-    email: 'caremart@example.com',
-    date: '2025-10-31'
-  },
-  {
-    _id: '5',
-    name: 'Rabbit Hutch with Run',
-    category: 'Accessories',
-    price: 120,
-    location: 'Barishal',
-    image: 'https://images.unsplash.com/photo-1504595403659-9088ce801e29?w=800&auto=format&fit=crop&q=80',
-    description: 'Spacious wooden rabbit hutch with exercise run',
-    sellerName: 'Small Pet World',
-    email: 'smallpets@example.com',
-    date: '2025-11-01'
-  }
-];
-
-const mockOrders = [
-  {
-    _id: 'order-001',
-    productId: '3',
-    productName: 'Premium Dog Food 5kg',
-    email: 'urmichakravorty02@gmail.com',
-    buyerName: 'Demo User',
-    quantity: 2,
-    price: 50,
-    address: '123 Demo Street, Dhaka',
-    phone: '01712345678',
-    date: new Date().toISOString().split('T')[0],
-    status: 'completed',
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15')
-  },
-  {
-    _id: 'order-002',
-    productId: '1',
-    productName: 'Golden Retriever Puppy',
-    email: 'urmichakravorty02@gmail.com',
-    buyerName: 'Demo User',
-    quantity: 1,
-    price: 0,
-    address: '456 Sample Road, Chattogram',
-    phone: '01876543210',
-    date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    status: 'pending',
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-  }
-];
-
 // ========== ALL ROUTES ==========
 
 // 1. ROOT ENDPOINT
@@ -198,22 +93,20 @@ app.get('/', (req, res) => {
       'GET  /test-cors',
       'GET  /listings',
       'GET  /listings/:id',
-      'GET  /listings/latest',
-      'GET  /listings/category/:category',
       'GET  /orders',
       'GET  /orders/user/:email',
       'POST /orders'
-    ],
-    examples: {
-      healthCheck: 'https://backend-10-i1qp6b7m5-urmis-projects-37af7542.vercel.app/health',
-      testCors: 'https://backend-10-i1qp6b7m5-urmis-projects-37af7542.vercel.app/test-cors',
-      userOrders: 'https://backend-10-i1qp6b7m5-urmis-projects-37af7542.vercel.app/orders/user/urmichakravorty02@gmail.com'
-    }
+    ]
   });
 });
 
-// 2. HEALTH CHECK
+// 2. HEALTH CHECK - PUBLIC NO AUTH REQUIRED
 app.get('/health', (req, res) => {
+  // Explicit CORS headers for health endpoint
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
   res.json({
     success: true,
     status: 'healthy ✅',
@@ -231,9 +124,8 @@ app.get('/health', (req, res) => {
 
 // 3. CORS TEST ENDPOINT ✅
 app.get('/test-cors', (req, res) => {
-  console.log('✅ /test-cors endpoint called');
-  console.log('Origin:', req.headers.origin);
-  console.log('Method:', req.method);
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
   
   res.json({
     success: true,
@@ -243,25 +135,19 @@ app.get('/test-cors', (req, res) => {
       origin: req.headers.origin,
       method: req.method,
       userAgent: req.headers['user-agent']
-    },
-    corsHeaders: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-    },
-    note: 'This endpoint proves CORS is properly configured.'
+    }
   });
 });
 
 // 4. ALL LISTINGS
 app.get('/listings', async (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  
   try {
-    let listings;
+    let listings = [];
     
     if (listingsCollection) {
-      listings = await listingsCollection.find().limit(20).toArray();
-    } else {
-      listings = mockListings;
+      listings = await listingsCollection.find({}).limit(50).toArray();
     }
     
     res.json({
@@ -280,9 +166,11 @@ app.get('/listings', async (req, res) => {
 
 // 5. SINGLE LISTING BY ID
 app.get('/listings/:id', async (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  
   try {
     const id = req.params.id;
-    let listing;
+    let listing = null;
     
     if (listingsCollection) {
       if (ObjectId.isValid(id)) {
@@ -293,10 +181,6 @@ app.get('/listings/:id', async (req, res) => {
       }
     }
     
-    if (!listing) {
-      listing = mockListings.find(item => item._id === id);
-    }
-    
     if (listing) {
       res.json({
         success: true,
@@ -305,8 +189,7 @@ app.get('/listings/:id', async (req, res) => {
     } else {
       res.status(404).json({
         success: false,
-        error: 'Listing not found',
-        requestedId: id
+        error: 'Listing not found'
       });
     }
   } catch (error) {
@@ -318,38 +201,15 @@ app.get('/listings/:id', async (req, res) => {
   }
 });
 
-// 6. LATEST LISTINGS
-app.get('/listings/latest', (req, res) => {
-  res.json({
-    success: true,
-    count: 6,
-    data: mockListings.slice(0, 6)
-  });
-});
-
-// 7. LISTINGS BY CATEGORY
-app.get('/listings/category/:category', (req, res) => {
-  const category = req.params.category;
-  const filtered = mockListings.filter(item => 
-    item.category.toLowerCase() === category.toLowerCase()
-  );
-  
-  res.json({
-    success: true,
-    count: filtered.length,
-    data: filtered
-  });
-});
-
-// 8. ALL ORDERS ✅
+// 6. ALL ORDERS ✅
 app.get('/orders', async (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  
   try {
-    let orders;
+    let orders = [];
     
     if (ordersCollection) {
-      orders = await ordersCollection.find().limit(50).toArray();
-    } else {
-      orders = mockOrders;
+      orders = await ordersCollection.find({}).limit(100).toArray();
     }
     
     res.json({
@@ -366,8 +226,13 @@ app.get('/orders', async (req, res) => {
   }
 });
 
-// 9. USER ORDERS BY EMAIL ✅
+// 7. USER ORDERS BY EMAIL ✅ - FIXED CORS
 app.get('/orders/user/:email', async (req, res) => {
+  // Set CORS headers specifically for this endpoint
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
   try {
     const email = req.params.email;
     console.log(`📧 Fetching orders for: ${email}`);
@@ -381,34 +246,9 @@ app.get('/orders/user/:email', async (req, res) => {
         .toArray();
     }
     
-    // If no orders found in DB, use mock data
-    if (!orders || orders.length === 0) {
-      orders = mockOrders.filter(order => order.email === email);
-      
-      // If still no orders, create demo data
-      if (orders.length === 0) {
-        orders = [
-          {
-            _id: `order-${Date.now()}`,
-            productId: '3',
-            productName: 'Premium Dog Food 5kg',
-            email: email,
-            buyerName: 'Demo User',
-            quantity: 2,
-            price: 50,
-            address: '123 Street, Dhaka',
-            phone: '01712345678',
-            date: new Date().toISOString().split('T')[0],
-            status: 'completed',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        ];
-      }
-    }
-    
     console.log(`✅ Found ${orders.length} orders for ${email}`);
     
+    // Return the array directly as your frontend expects
     res.json(orders);
     
   } catch (error) {
@@ -421,8 +261,11 @@ app.get('/orders/user/:email', async (req, res) => {
   }
 });
 
-// 10. CREATE NEW ORDER
+// 8. CREATE NEW ORDER
 app.post('/orders', async (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST');
+  
   try {
     const orderData = req.body;
     console.log('📦 New order received:', orderData);
@@ -441,7 +284,7 @@ app.post('/orders', async (req, res) => {
     const order = {
       ...orderData,
       _id: new ObjectId().toString(),
-      status: 'pending',
+      status: orderData.status || 'pending',
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -470,10 +313,150 @@ app.post('/orders', async (req, res) => {
   }
 });
 
+// 9. UPDATE ORDER STATUS
+app.patch('/orders/:id', async (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'PATCH');
+  
+  try {
+    const orderId = req.params.id;
+    const { status } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        error: 'Status is required'
+      });
+    }
+    
+    let result = null;
+    
+    if (ordersCollection) {
+      if (ObjectId.isValid(orderId)) {
+        result = await ordersCollection.updateOne(
+          { _id: new ObjectId(orderId) },
+          { $set: { status: status, updatedAt: new Date() } }
+        );
+      } else {
+        result = await ordersCollection.updateOne(
+          { _id: orderId },
+          { $set: { status: status, updatedAt: new Date() } }
+        );
+      }
+    }
+    
+    if (result && result.modifiedCount > 0) {
+      res.json({
+        success: true,
+        message: 'Order status updated successfully'
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+  } catch (error) {
+    console.error('Error in PATCH /orders/:id:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update order'
+    });
+  }
+});
+
+// 10. DELETE ORDER
+app.delete('/orders/:id', async (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'DELETE');
+  
+  try {
+    const orderId = req.params.id;
+    
+    let result = null;
+    
+    if (ordersCollection) {
+      if (ObjectId.isValid(orderId)) {
+        result = await ordersCollection.deleteOne({ _id: new ObjectId(orderId) });
+      } else {
+        result = await ordersCollection.deleteOne({ _id: orderId });
+      }
+    }
+    
+    if (result && result.deletedCount > 0) {
+      res.json({
+        success: true,
+        message: 'Order deleted successfully'
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+  } catch (error) {
+    console.error('Error in DELETE /orders/:id:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete order'
+    });
+  }
+});
+
+// 11. ADD NEW LISTING
+app.post('/listings', async (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST');
+  
+  try {
+    const listingData = req.body;
+    
+    // Validation
+    const requiredFields = ['name', 'category', 'price', 'location', 'description', 'sellerName', 'email'];
+    const missingFields = requiredFields.filter(field => !listingData[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+    
+    const listing = {
+      ...listingData,
+      _id: new ObjectId().toString(),
+      date: new Date().toISOString().split('T')[0],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    // Save to database if available
+    if (listingsCollection) {
+      await listingsCollection.insertOne(listing);
+      console.log('✅ Listing saved to MongoDB');
+    }
+    
+    res.status(201).json({
+      success: true,
+      message: 'Listing added successfully!',
+      data: listing
+    });
+    
+  } catch (error) {
+    console.error('Error in POST /listings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add listing'
+    });
+  }
+});
+
 // ========== ERROR HANDLING ==========
 
 // 404 - Route not found
 app.use('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  
   res.status(404).json({
     success: false,
     error: `Route not found: ${req.method} ${req.originalUrl}`,
@@ -483,18 +466,20 @@ app.use('*', (req, res) => {
       'GET  /test-cors',
       'GET  /listings',
       'GET  /listings/:id',
-      'GET  /listings/latest',
-      'GET  /listings/category/:category',
       'GET  /orders',
       'GET  /orders/user/:email',
-      'POST /orders'
-    ],
-    currentTime: new Date().toISOString()
+      'POST /orders',
+      'PATCH /orders/:id',
+      'DELETE /orders/:id',
+      'POST /listings'
+    ]
   });
 });
 
 // Global error handler
 app.use((err, req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  
   console.error('🔥 Unhandled error:', err);
   
   res.status(500).json({
@@ -511,7 +496,6 @@ app.listen(port, () => {
 🌐 Local: http://localhost:${port}
 📡 Health: http://localhost:${port}/health
 🔗 CORS Test: http://localhost:${port}/test-cors
-📋 User Orders: http://localhost:${port}/orders/user/urmichakravorty02@gmail.com
 
 ✅ CORS is ENABLED for ALL origins (*)
 ✅ All endpoints are READY
