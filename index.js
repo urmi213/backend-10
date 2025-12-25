@@ -265,17 +265,6 @@ initializeDatabase().then(success => {
   }
 });
 
-// Helper function for default images
-function getDefaultImage(category) {
-  switch(category) {
-    case 'Pets': return 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?w=800&auto=format&fit=crop&q=80';
-    case 'Food': return 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=800&auto=format&fit=crop&q=80';
-    case 'Accessories': return 'https://images.unsplash.com/photo-1514888286974-6d03bdeacba8?w=800&auto=format&fit=crop&q=80';
-    case 'Care Products': return 'https://images.unsplash.com/photo-1560743641-3914f2c45636?w=800&auto=format&fit=crop&q=80';
-    default: return 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&auto=format&fit=crop&q=80';
-  }
-}
-
 // ========== ROUTES ==========
 
 // 1. ROOT ENDPOINT
@@ -295,8 +284,6 @@ app.get('/', (req, res) => {
       'GET  /listings/:id',
       'GET  /api/listings/:id',
       'GET  /listings/latest/:limit?',
-      'GET  /listings/recent',
-      'GET  /api/listings/recent',
       'GET  /listings/category/:category',
       'GET  /api/listings/category/:category',
       'POST /listings',
@@ -774,91 +761,7 @@ app.get('/listings/latest/:limit?', async (req, res) => {
   }
 });
 
-// 9. GET RECENT LISTINGS FOR HOME PAGE (ANYCOST - MUST RETURN REAL DATA)
-app.get('/listings/recent', async (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit) || 6;
-    console.log(`📡 GET /listings/recent?limit=${limit} request for Home Page`);
-    
-    if (!isConnected || !listingsCollection) {
-      console.log('❌ MongoDB not connected, returning empty array');
-      return res.json({
-        success: false,
-        message: 'MongoDB not connected',
-        listings: []
-      });
-    }
-    
-    console.log('🔍 Querying MongoDB for recent listings...');
-    
-    // Get latest listings from MongoDB
-    const listings = await listingsCollection
-      .find({})
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .toArray();
-    
-    console.log(`✅ Found ${listings.length} recent listings in MongoDB`);
-    
-    // Format the data
-    const formattedListings = listings.map(item => ({
-      _id: item._id ? item._id.toString() : `mongo-${Date.now()}`,
-      id: item.id || item._id?.toString() || 'unknown',
-      name: item.name || item.title || 'Unnamed Listing',
-      category: item.category || 'General',
-      price: item.price || 0,
-      location: item.location || 'Unknown',
-      image: item.image || (item.imageUrls && item.imageUrls[0]) || getDefaultImage(item.category),
-      description: item.description || 'No description available',
-      sellerName: item.sellerName || 'Anonymous',
-      email: item.email || 'N/A',
-      date: item.date || (item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
-      createdAt: item.createdAt || new Date(),
-      updatedAt: item.updatedAt || new Date()
-    }));
-    
-    res.json({
-      success: true,
-      message: `Found ${formattedListings.length} recent listings`,
-      listings: formattedListings,
-      limit: limit,
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('❌ Error in /listings/recent:', error);
-    
-    // Return empty array instead of demo data
-    res.json({
-      success: false,
-      message: 'Failed to fetch recent listings',
-      error: error.message,
-      listings: [],
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// 10. API-COMPATIBLE RECENT LISTINGS
-app.get('/api/listings/recent', async (req, res) => {
-  try {
-    console.log('📡 GET /api/listings/recent (API compatible)');
-    
-    // Reuse the same logic from /listings/recent
-    req.url = '/listings/recent';
-    return app._router.handle(req, res);
-    
-  } catch (error) {
-    console.error('❌ Error in /api/listings/recent:', error);
-    res.json({
-      success: false,
-      message: 'Failed to fetch recent listings',
-      listings: []
-    });
-  }
-});
-
-// 11. GET LISTINGS BY CATEGORY
+// 9. GET LISTINGS BY CATEGORY
 app.get('/listings/category/:category', async (req, res) => {
   try {
     const category = req.params.category;
@@ -951,7 +854,7 @@ app.get('/listings/category/:category', async (req, res) => {
   }
 });
 
-// 12. API-COMPATIBLE CATEGORY ENDPOINT
+// 10. API-COMPATIBLE CATEGORY ENDPOINT
 app.get('/api/listings/category/:category', async (req, res) => {
   try {
     const category = req.params.category;
@@ -967,7 +870,7 @@ app.get('/api/listings/category/:category', async (req, res) => {
   }
 });
 
-// 13. CREATE NEW LISTING
+// 11. CREATE NEW LISTING
 app.post('/listings', async (req, res) => {
   try {
     const listingData = req.body;
@@ -1023,7 +926,7 @@ app.post('/listings', async (req, res) => {
 
 // ========== ORDER ROUTES ==========
 
-// 14. CREATE NEW ORDER
+// 12. CREATE NEW ORDER
 app.post('/orders', async (req, res) => {
   try {
     const orderData = req.body;
@@ -1069,7 +972,7 @@ app.post('/orders', async (req, res) => {
   }
 });
 
-// 15. GET USER ORDERS BY EMAIL
+// 13. GET USER ORDERS BY EMAIL
 app.get('/orders/user/:email', async (req, res) => {
   try {
     const email = req.params.email;
@@ -1137,7 +1040,7 @@ app.get('/orders/user/:email', async (req, res) => {
   }
 });
 
-// 16. API-COMPATIBLE ORDER ROUTE
+// 14. API-COMPATIBLE ORDER ROUTE
 app.get('/api/orders/user/:email', async (req, res) => {
   try {
     const email = req.params.email;
@@ -1153,7 +1056,7 @@ app.get('/api/orders/user/:email', async (req, res) => {
   }
 });
 
-// 17. GET ALL ORDERS (ADMIN)
+// 15. GET ALL ORDERS (ADMIN)
 app.get('/orders', async (req, res) => {
   try {
     let orders = [];
@@ -1178,7 +1081,7 @@ app.get('/orders', async (req, res) => {
   }
 });
 
-// 18. SEED DATABASE
+// 16. SEED DATABASE
 app.post('/seed', async (req, res) => {
   try {
     console.log('🌱 Seeding database...');
@@ -1211,7 +1114,7 @@ app.post('/seed', async (req, res) => {
   }
 });
 
-// 19. DATABASE STATUS
+// 17. DATABASE STATUS
 app.get('/db-status', async (req, res) => {
   try {
     let status = {
@@ -1246,7 +1149,7 @@ app.get('/db-status', async (req, res) => {
   }
 });
 
-// 20. ADD TEST DATA
+// 18. ADD TEST DATA
 app.post('/add-test', async (req, res) => {
   try {
     // Get the latest ID
@@ -1294,7 +1197,7 @@ app.post('/add-test', async (req, res) => {
   }
 });
 
-// 21. GET USER LISTINGS BY EMAIL
+// 19. GET USER LISTINGS BY EMAIL
 app.get('/listings/user/:email', async (req, res) => {
   try {
     const email = req.params.email;
@@ -1320,7 +1223,7 @@ app.get('/listings/user/:email', async (req, res) => {
   }
 });
 
-// 22. ENVIRONMENT CHECK
+// 20. ENVIRONMENT CHECK
 app.get('/env-check', (req, res) => {
   res.json({
     success: true,
@@ -1333,7 +1236,7 @@ app.get('/env-check', (req, res) => {
   });
 });
 
-// 23. TEST MONGODB CONNECTION
+// 21. TEST MONGODB CONNECTION
 app.get('/test-mongo', async (req, res) => {
   try {
     console.log('🔍 Testing MongoDB connection...');
@@ -1363,7 +1266,7 @@ app.get('/test-mongo', async (req, res) => {
   }
 });
 
-// 24. PING TEST
+// 22. PING TEST
 app.get('/ping', (req, res) => {
   res.json({
     success: true,
@@ -1404,8 +1307,8 @@ app.listen(port, () => {
 🔗 Test: https://backend-10-five.vercel.app/test
 📊 Listings: https://backend-10-five.vercel.app/listings
 🔧 API Listings: https://backend-10-five.vercel.app/api/listings
-🐾 Recent Listings: https://backend-10-five.vercel.app/listings/recent?limit=6
-🔧 API Recent: https://backend-10-five.vercel.app/api/listings/recent?limit=6
+🐾 Categories: https://backend-10-five.vercel.app/listings/category/:category
+🔧 API Categories: https://backend-10-five.vercel.app/api/listings/category/:category
 📦 Orders: https://backend-10-five.vercel.app/api/orders/user/:email
 🌱 Seed: https://backend-10-five.vercel.app/seed (POST)
 🔍 Single Listing: https://backend-10-five.vercel.app/api/listings/3
