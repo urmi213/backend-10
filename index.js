@@ -396,6 +396,49 @@ app.get('/listings', async (req, res) => {
     res.json([]);
   }
 });
+// Get single listing by ID (with /api prefix)
+app.get('/api/listings/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const listing = await db.collection('listings').findOne({ id: parseInt(id) });
+    
+    if (!listing) {
+      return res.status(404).json({ 
+        success: false, 
+        error: `Listing with ID ${id} not found` 
+      });
+    }
+    
+    res.json(listing);
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// Get single listing by ID (without /api prefix - for compatibility)
+app.get('/listings/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const listing = await db.collection('listings').findOne({ id: parseInt(id) });
+    
+    if (!listing) {
+      return res.status(404).json({ 
+        success: false, 
+        error: `Listing with ID ${id} not found` 
+      });
+    }
+    
+    res.json(listing);
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
 
 // 5. API-COMPATIBLE LISTINGS (WITH /API PREFIX)
 app.get('/api/listings', async (req, res) => {
