@@ -25,6 +25,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const uri = "mongodb+srv://pawmart_user:RlJ9RGOVkxXSFL3z@petshopcluster.9k2rmcx.mongodb.net/pawmartDB?retryWrites=true&w=majority&appName=PetShopCluster";
 
 let client;
+let db;
 let isConnected = false;
 let listingsCollection = null;
 let ordersCollection = null;
@@ -33,7 +34,7 @@ async function initializeDatabase() {
   try {
     console.log('🔄 Initializing MongoDB connection...');
     console.log('Environment:', process.env.NODE_ENV);
-    console.log('MongoDB URI present:', !!process.env.MONGODB_URI);
+    console.log('MongoDB URI present:', !!uri);
     
     client = new MongoClient(uri, {
       serverApi: {
@@ -48,7 +49,7 @@ async function initializeDatabase() {
     await client.connect();
     console.log('✅ Connected to MongoDB');
     
-    const db = client.db('pawmartDB');
+    db = client.db('pawmartDB');
     
     // Check if collections exist, create if not
     const collections = await db.listCollections().toArray();
@@ -90,6 +91,7 @@ async function seedSampleData() {
   try {
     const sampleListings = [
       {
+        id: 1,
         name: 'Golden Retriever Puppy',
         category: 'Pets',
         price: 0,
@@ -103,6 +105,7 @@ async function seedSampleData() {
         updatedAt: new Date()
       },
       {
+        id: 2,
         name: 'Persian Kitten',
         category: 'Pets',
         price: 150,
@@ -116,6 +119,7 @@ async function seedSampleData() {
         updatedAt: new Date()
       },
       {
+        id: 3,
         name: 'Premium Dog Food 5kg',
         category: 'Food',
         price: 25,
@@ -129,6 +133,7 @@ async function seedSampleData() {
         updatedAt: new Date()
       },
       {
+        id: 4,
         name: 'Organic Pet Shampoo',
         category: 'Care Products',
         price: 15,
@@ -142,6 +147,7 @@ async function seedSampleData() {
         updatedAt: new Date()
       },
       {
+        id: 5,
         name: 'Dog Leash Set',
         category: 'Accessories',
         price: 18,
@@ -155,6 +161,7 @@ async function seedSampleData() {
         updatedAt: new Date()
       },
       {
+        id: 6,
         name: 'Rabbit Hutch with Run',
         category: 'Accessories',
         price: 120,
@@ -168,6 +175,7 @@ async function seedSampleData() {
         updatedAt: new Date()
       },
       {
+        id: 7,
         name: 'Parakeet Pair with Cage',
         category: 'Pets',
         price: 45,
@@ -181,6 +189,7 @@ async function seedSampleData() {
         updatedAt: new Date()
       },
       {
+        id: 8,
         name: 'Pet First Aid Kit',
         category: 'Care Products',
         price: 30,
@@ -194,6 +203,7 @@ async function seedSampleData() {
         updatedAt: new Date()
       },
       {
+        id: 9,
         name: 'Cat Dry Food 3kg',
         category: 'Food',
         price: 20,
@@ -202,6 +212,34 @@ async function seedSampleData() {
         description: 'Premium cat food for all life stages',
         sellerName: 'Healthy Pet Foods',
         email: 'healthyfoods@example.com',
+        date: new Date().toISOString().split('T')[0],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 10,
+        name: 'Fish Tank Setup',
+        category: 'Accessories',
+        price: 75,
+        location: 'Dhaka',
+        image: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=800&auto=format&fit=crop&q=80',
+        description: '20-gallon fish tank with filter and accessories',
+        sellerName: 'Aqua World',
+        email: 'aquaworld@example.com',
+        date: new Date().toISOString().split('T')[0],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 11,
+        name: 'Hamster Cage Set',
+        category: 'Accessories',
+        price: 35,
+        location: 'Sylhet',
+        image: 'https://images.unsplash.com/photo-1522065893269-6fd20b4c7b3b?w=800&auto=format&fit=crop&q=80',
+        description: 'Complete hamster cage with wheel and accessories',
+        sellerName: 'Small Pets Galore',
+        email: 'smallpets@example.com',
         date: new Date().toISOString().split('T')[0],
         createdAt: new Date(),
         updatedAt: new Date()
@@ -310,6 +348,7 @@ app.get('/listings', async (req, res) => {
       listings = [
         {
           _id: '1',
+          id: 1,
           name: 'Golden Retriever Puppy',
           category: 'Pets',
           price: 0,
@@ -325,6 +364,7 @@ app.get('/listings', async (req, res) => {
         },
         {
           _id: '2',
+          id: 2,
           name: 'Persian Kitten',
           category: 'Pets',
           price: 150,
@@ -340,6 +380,7 @@ app.get('/listings', async (req, res) => {
         },
         {
           _id: '3',
+          id: 3,
           name: 'Premium Dog Food 5kg',
           category: 'Food',
           price: 25,
@@ -355,6 +396,7 @@ app.get('/listings', async (req, res) => {
         },
         {
           _id: '4',
+          id: 4,
           name: 'Organic Pet Shampoo',
           category: 'Care Products',
           price: 15,
@@ -370,6 +412,7 @@ app.get('/listings', async (req, res) => {
         },
         {
           _id: '5',
+          id: 5,
           name: 'Dog Leash Set',
           category: 'Accessories',
           price: 18,
@@ -394,49 +437,6 @@ app.get('/listings', async (req, res) => {
     
     // Fallback to empty array
     res.json([]);
-  }
-});
-// Get single listing by ID (with /api prefix)
-app.get('/api/listings/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    const listing = await db.collection('listings').findOne({ id: parseInt(id) });
-    
-    if (!listing) {
-      return res.status(404).json({ 
-        success: false, 
-        error: `Listing with ID ${id} not found` 
-      });
-    }
-    
-    res.json(listing);
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
-  }
-});
-
-// Get single listing by ID (without /api prefix - for compatibility)
-app.get('/listings/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    const listing = await db.collection('listings').findOne({ id: parseInt(id) });
-    
-    if (!listing) {
-      return res.status(404).json({ 
-        success: false, 
-        error: `Listing with ID ${id} not found` 
-      });
-    }
-    
-    res.json(listing);
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
   }
 });
 
@@ -468,6 +468,7 @@ app.get('/api/listings', async (req, res) => {
       listings = [
         {
           _id: '1',
+          id: 1,
           name: 'Golden Retriever Puppy',
           category: 'Pets',
           price: 0,
@@ -483,6 +484,7 @@ app.get('/api/listings', async (req, res) => {
         },
         {
           _id: '2',
+          id: 2,
           name: 'Persian Kitten',
           category: 'Pets',
           price: 150,
@@ -498,6 +500,7 @@ app.get('/api/listings', async (req, res) => {
         },
         {
           _id: '3',
+          id: 3,
           name: 'Premium Dog Food 5kg',
           category: 'Food',
           price: 25,
@@ -513,6 +516,7 @@ app.get('/api/listings', async (req, res) => {
         },
         {
           _id: '4',
+          id: 4,
           name: 'Organic Pet Shampoo',
           category: 'Care Products',
           price: 15,
@@ -528,6 +532,7 @@ app.get('/api/listings', async (req, res) => {
         },
         {
           _id: '5',
+          id: 5,
           name: 'Dog Leash Set',
           category: 'Accessories',
           price: 18,
@@ -552,7 +557,184 @@ app.get('/api/listings', async (req, res) => {
   }
 });
 
-// 6. GET LATEST LISTINGS
+// 6. GET SINGLE LISTING BY ID (FIXED - NO DUPLICATE)
+app.get('/listings/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    console.log(`📡 GET /listings/${id} request`);
+    
+    let listing = null;
+    
+    if (isConnected && listingsCollection) {
+      console.log(`🔍 Searching for listing ID: ${id}`);
+      
+      // Try numeric ID search first
+      const numericId = parseInt(id);
+      if (!isNaN(numericId)) {
+        listing = await listingsCollection.findOne({ id: numericId });
+        console.log(`🔢 Search by numeric ID ${numericId}:`, listing ? 'Found' : 'Not found');
+      }
+      
+      // If not found by numeric ID, try ObjectId
+      if (!listing && ObjectId.isValid(id)) {
+        listing = await listingsCollection.findOne({ _id: new ObjectId(id) });
+        console.log(`🆔 Search by ObjectId ${id}:`, listing ? 'Found' : 'Not found');
+      }
+      
+      // If still not found, get all and filter
+      if (!listing) {
+        const allListings = await listingsCollection.find({}).toArray();
+        listing = allListings.find(item => {
+          // Check if item has id field that matches
+          if (item.id && item.id.toString() === id) return true;
+          // Check if _id matches
+          if (item._id && item._id.toString() === id) return true;
+          return false;
+        });
+        console.log(`🔍 Search in all ${allListings.length} listings:`, listing ? 'Found' : 'Not found');
+      }
+      
+      if (listing) {
+        // Ensure _id is string
+        listing._id = listing._id ? listing._id.toString() : id;
+        // Ensure id field exists (for frontend compatibility)
+        if (!listing.id && !isNaN(parseInt(id))) {
+          listing.id = parseInt(id);
+        }
+        console.log(`✅ Found listing: ${listing.name || listing.title}`);
+      } else {
+        console.log(`❌ Listing with ID ${id} not found`);
+      }
+    } else {
+      console.log('⚠️ MongoDB not connected, returning fallback data');
+      
+      // Fallback data for common IDs
+      const fallbackData = {
+        '1': {
+          _id: '1',
+          id: 1,
+          name: 'Golden Retriever Puppy',
+          category: 'Pets',
+          price: 0,
+          location: 'Dhaka',
+          image: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?w=800&auto=format&fit=crop&q=80',
+          description: 'Friendly 3-month-old puppy, vaccinated and ready for adoption',
+          sellerName: 'Pet Care Center',
+          email: 'petcare@example.com',
+          date: new Date().toISOString().split('T')[0],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          source: 'fallback'
+        },
+        '2': {
+          _id: '2',
+          id: 2,
+          name: 'Persian Kitten',
+          category: 'Pets',
+          price: 150,
+          location: 'Chattogram',
+          image: 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=800&auto=format&fit=crop&q=80',
+          description: 'Beautiful white Persian kitten, 2 months old',
+          sellerName: 'Cat Lovers Hub',
+          email: 'catlover@example.com',
+          date: new Date().toISOString().split('T')[0],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          source: 'fallback'
+        },
+        '3': {
+          _id: '3',
+          id: 3,
+          name: 'Premium Dog Food 5kg',
+          category: 'Food',
+          price: 25,
+          location: 'Sylhet',
+          image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=800&auto=format&fit=crop&q=80',
+          description: 'High-quality dog food with natural ingredients',
+          sellerName: 'Pet Food Store',
+          email: 'petfood@example.com',
+          date: new Date().toISOString().split('T')[0],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          source: 'fallback'
+        },
+        '4': {
+          _id: '4',
+          id: 4,
+          name: 'Organic Pet Shampoo',
+          category: 'Care Products',
+          price: 15,
+          location: 'Rajshahi',
+          image: 'https://images.unsplash.com/photo-1560743641-3914f2c45636?w=800&auto=format&fit=crop&q=80',
+          description: 'Gentle shampoo for sensitive skin pets',
+          sellerName: 'Pet Care Mart',
+          email: 'caremart@example.com',
+          date: new Date().toISOString().split('T')[0],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          source: 'fallback'
+        },
+        '5': {
+          _id: '5',
+          id: 5,
+          name: 'Dog Leash Set',
+          category: 'Accessories',
+          price: 18,
+          location: 'Dhaka',
+          image: 'https://images.unsplash.com/photo-1554456854-55a089fd4cb2?w=800&auto=format&fit=crop&q=80',
+          description: 'Premium leather dog leash with collar',
+          sellerName: 'Pet Gear BD',
+          email: 'petgear@example.com',
+          date: new Date().toISOString().split('T')[0],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          source: 'fallback'
+        }
+      };
+      
+      listing = fallbackData[id] || null;
+    }
+    
+    if (listing) {
+      res.json(listing);
+    } else {
+      res.status(404).json({
+        success: false,
+        error: `Listing with ID ${id} not found`,
+        availableRoutes: '/listings, /api/listings, /listings/category/:category'
+      });
+    }
+    
+  } catch (error) {
+    console.error(`❌ Error in /listings/:id:`, error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: 'Server error occurred'
+    });
+  }
+});
+
+// 7. API-COMPATIBLE SINGLE LISTING
+app.get('/api/listings/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    console.log(`📡 GET /api/listings/${id} (API route)`);
+    
+    // Reuse the same logic from /listings/:id
+    req.url = `/listings/${id}`;
+    return app._router.handle(req, res);
+    
+  } catch (error) {
+    console.error('Error in /api/listings/:id:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch listing'
+    });
+  }
+});
+
+// 8. GET LATEST LISTINGS
 app.get('/listings/latest/:limit?', async (req, res) => {
   try {
     const limit = parseInt(req.params.limit) || 6;
@@ -579,7 +761,7 @@ app.get('/listings/latest/:limit?', async (req, res) => {
   }
 });
 
-// 7. GET LISTINGS BY CATEGORY
+// 9. GET LISTINGS BY CATEGORY
 app.get('/listings/category/:category', async (req, res) => {
   try {
     const category = req.params.category;
@@ -608,6 +790,7 @@ app.get('/listings/category/:category', async (req, res) => {
         'pets': [
           {
             _id: 'pet-1',
+            id: 1,
             name: 'Golden Retriever Puppy',
             category: 'Pets',
             price: 0,
@@ -625,6 +808,7 @@ app.get('/listings/category/:category', async (req, res) => {
         'accessories': [
           {
             _id: 'acc-1',
+            id: 5,
             name: 'Dog Leash Set',
             category: 'Accessories',
             price: 18,
@@ -642,6 +826,7 @@ app.get('/listings/category/:category', async (req, res) => {
         'food': [
           {
             _id: 'food-1',
+            id: 3,
             name: 'Premium Dog Food 5kg',
             category: 'Food',
             price: 25,
@@ -669,7 +854,7 @@ app.get('/listings/category/:category', async (req, res) => {
   }
 });
 
-// 8. API-COMPATIBLE CATEGORY ENDPOINT
+// 10. API-COMPATIBLE CATEGORY ENDPOINT
 app.get('/api/listings/category/:category', async (req, res) => {
   try {
     const category = req.params.category;
@@ -682,76 +867,6 @@ app.get('/api/listings/category/:category', async (req, res) => {
   } catch (error) {
     console.error(`❌ Error in /api/listings/category/:`, error);
     res.json([]);
-  }
-});
-
-// 9. GET SINGLE LISTING BY ID
-app.get('/listings/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    let listing = null;
-    
-    if (isConnected && listingsCollection) {
-      try {
-        // Try as ObjectId first
-        if (ObjectId.isValid(id)) {
-          listing = await listingsCollection.findOne({ _id: new ObjectId(id) });
-        }
-        
-        // If not found, try as string
-        if (!listing) {
-          const allListings = await listingsCollection.find({}).toArray();
-          listing = allListings.find(item => 
-            item._id && item._id.toString() === id
-          );
-        }
-        
-        if (listing && listing._id) {
-          listing._id = listing._id.toString();
-        }
-        
-      } catch (dbError) {
-        console.error('Database error:', dbError);
-      }
-    }
-    
-    if (listing) {
-      res.json({
-        success: true,
-        data: listing
-      });
-    } else {
-      res.status(404).json({
-        success: false,
-        error: 'Listing not found'
-      });
-    }
-    
-  } catch (error) {
-    console.error('Error in /listings/:id:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch listing'
-    });
-  }
-});
-
-// 10. API-COMPATIBLE SINGLE LISTING
-app.get('/api/listings/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    console.log(`📡 GET /api/listings/${id} (API compatible)`);
-    
-    // Call the existing listing by ID logic
-    req.url = `/listings/${id}`;
-    return app._router.handle(req, res);
-    
-  } catch (error) {
-    console.error('Error in /api/listings/:id:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch listing'
-    });
   }
 });
 
@@ -771,7 +886,13 @@ app.post('/listings', async (req, res) => {
       });
     }
     
+    // Generate a new ID
+    const latestListing = isConnected && listingsCollection ? 
+      await listingsCollection.find().sort({ id: -1 }).limit(1).toArray() : [];
+    const newId = latestListing.length > 0 ? latestListing[0].id + 1 : 12;
+    
     const newListing = {
+      id: newId,
       ...listingData,
       price: parseFloat(listingData.price) || 0,
       sellerName: listingData.sellerName || listingData.email?.split('@')[0] || 'Pet Owner',
@@ -1031,7 +1152,13 @@ app.get('/db-status', async (req, res) => {
 // 18. ADD TEST DATA
 app.post('/add-test', async (req, res) => {
   try {
+    // Get the latest ID
+    const latestListing = isConnected && listingsCollection ? 
+      await listingsCollection.find().sort({ id: -1 }).limit(1).toArray() : [];
+    const newId = latestListing.length > 0 ? latestListing[0].id + 1 : 12;
+    
     const testData = {
+      id: newId,
       name: 'Test Pet - ' + new Date().toLocaleTimeString(),
       category: 'Pets',
       price: 99,
@@ -1100,7 +1227,7 @@ app.get('/listings/user/:email', async (req, res) => {
 app.get('/env-check', (req, res) => {
   res.json({
     success: true,
-    MONGODB_URI: process.env.MONGODB_URI ? '✅ Present' : '❌ Missing',
+    MONGODB_URI: uri ? '✅ Present (hardcoded)' : '❌ Missing',
     NODE_ENV: process.env.NODE_ENV || 'not set',
     VERCEL: process.env.VERCEL ? 'yes' : 'no',
     VERCEL_REGION: process.env.VERCEL_REGION || 'not set',
@@ -1184,6 +1311,7 @@ app.listen(port, () => {
 🔧 API Categories: https://backend-10-five.vercel.app/api/listings/category/:category
 📦 Orders: https://backend-10-five.vercel.app/api/orders/user/:email
 🌱 Seed: https://backend-10-five.vercel.app/seed (POST)
+🔍 Single Listing: https://backend-10-five.vercel.app/api/listings/3
   `);
 });
 
