@@ -678,6 +678,63 @@ app.get('/listings/user/:email', async (req, res) => {
   }
 });
 
+// ========== NEW ROUTES FOR TESTING ==========
+
+// 13. ENVIRONMENT CHECK
+app.get('/env-check', (req, res) => {
+  res.json({
+    success: true,
+    MONGODB_URI: process.env.MONGODB_URI ? '✅ Present' : '❌ Missing',
+    NODE_ENV: process.env.NODE_ENV || 'not set',
+    VERCEL: process.env.VERCEL ? 'yes' : 'no',
+    VERCEL_REGION: process.env.VERCEL_REGION || 'not set',
+    timestamp: new Date().toISOString(),
+    message: 'Environment variables check successful'
+  });
+});
+
+// 14. TEST MONGODB CONNECTION
+app.get('/test-mongo', async (req, res) => {
+  try {
+    console.log('🔍 Testing MongoDB connection...');
+    
+    const testClient = new MongoClient(uri, {
+      serverApi: { version: ServerApiVersion.v1 }
+    });
+    
+    await testClient.connect();
+    await testClient.db('admin').command({ ping: 1 });
+    await testClient.close();
+    
+    res.json({
+      success: true,
+      message: '🎉 MongoDB Atlas connection successful!',
+      ipWhitelist: 'verified (0.0.0.0/0)',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      message: '❌ MongoDB connection failed',
+      error: error.message,
+      suggestion: 'Check MongoDB Atlas → Network Access → Add 0.0.0.0/0',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 15. PING TEST
+app.get('/ping', (req, res) => {
+  res.json({
+    success: true,
+    message: 'pong 🏓',
+    server: 'PawMart Backend',
+    timestamp: new Date().toISOString()
+  });
+});
+
+
+
 // ========== ERROR HANDLING ==========
 
 // 404 - Route not found
