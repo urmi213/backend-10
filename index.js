@@ -388,74 +388,6 @@ app.get('/listings', async (req, res) => {
   }
 });
 
-// ✅✅✅ FIXED ROUTE FOR VERCEL ✅✅✅
-app.get('/api/listings', async (req, res) => {
-  try {
-    console.log('📡 GET /api/listings (Vercel compatible)');
-    
-    let listings = [];
-    
-    if (isConnected && listingsCollection) {
-      console.log('🔍 Querying MongoDB for Vercel route...');
-      
-      listings = await listingsCollection
-        .find({})
-        .sort({ createdAt: -1 })
-        .toArray();
-      
-      console.log(`📊 Found ${listings.length} listings in MongoDB`);
-      
-      listings = listings.map(item => ({
-        ...item,
-        _id: item._id ? item._id.toString() : `mongo-${Date.now()}`
-      }));
-      
-    } else {
-      console.log('⚠️ MongoDB not connected, returning sample data for Vercel');
-      
-      listings = [
-        {
-          _id: '1',
-          name: 'Golden Retriever Puppy',
-          category: 'Pets',
-          price: 0,
-          location: 'Dhaka',
-          image: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?w=800&auto=format&fit=crop&q=80',
-          description: 'Friendly 3-month-old puppy, vaccinated and ready for adoption',
-          sellerName: 'Pet Care Center',
-          email: 'petcare@example.com',
-          date: new Date().toISOString().split('T')[0],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          source: 'fallback-vercel'
-        },
-        {
-          _id: '2',
-          name: 'Persian Kitten',
-          category: 'Pets',
-          price: 150,
-          location: 'Chattogram',
-          image: 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=800&auto=format&fit=crop&q=80',
-          description: 'Beautiful white Persian kitten, 2 months old',
-          sellerName: 'Cat Lovers Hub',
-          email: 'catlover@example.com',
-          date: new Date().toISOString().split('T')[0],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          source: 'fallback-vercel'
-        }
-      ];
-    }
-    
-    res.json(listings);
-    
-  } catch (error) {
-    console.error('❌ Error in /api/listings:', error.message);
-    res.json([]);
-  }
-});
-// ✅✅✅ END OF FIXED ROUTE ✅✅✅
-
 // 5. GET LATEST LISTINGS
 app.get('/listings/latest/:limit?', async (req, res) => {
   try {
@@ -607,14 +539,14 @@ app.post('/listings', async (req, res) => {
     });
   }
 });
-
 // ========== ORDER ROUTES ==========
 
-// 9. CREATE NEW ORDER
+// 13. CREATE NEW ORDER
 app.post('/orders', async (req, res) => {
   try {
     const orderData = req.body;
     
+    // Validate required fields
     const requiredFields = ['productId', 'productName', 'email', 'buyerName', 'quantity', 'price', 'address', 'phone'];
     const missingFields = requiredFields.filter(field => !orderData[field]);
     
@@ -656,7 +588,7 @@ app.post('/orders', async (req, res) => {
   }
 });
 
-// 10. GET USER ORDERS BY EMAIL
+// 14. GET USER ORDERS BY EMAIL
 app.get('/orders/user/:email', async (req, res) => {
   try {
     const email = req.params.email;
@@ -674,46 +606,16 @@ app.get('/orders/user/:email', async (req, res) => {
       }));
     }
     
+    // If no orders found or DB not connected, return empty array
     res.json(orders);
     
   } catch (error) {
     console.error('Error in /orders/user/:email:', error);
-    res.json([]);
+    res.json([]); // Return empty array on error
   }
 });
 
-// ✅✅✅ FIXED ORDER ROUTE FOR VERCEL ✅✅✅
-app.get('/api/orders/user/:email', async (req, res) => {
-  try {
-    const email = req.params.email;
-    console.log(`📡 GET /api/orders/user/${email} (Vercel compatible)`);
-    
-    let orders = [];
-    
-    if (isConnected && ordersCollection) {
-      orders = await ordersCollection
-        .find({ email: email })
-        .sort({ createdAt: -1 })
-        .toArray();
-      
-      orders = orders.map(order => ({
-        ...order,
-        _id: order._id ? order._id.toString() : `order-${Date.now()}`
-      }));
-      
-      console.log(`📊 Found ${orders.length} orders for ${email}`);
-    }
-    
-    res.json(orders);
-    
-  } catch (error) {
-    console.error('❌ Error in /api/orders/user/:email:', error);
-    res.json([]);
-  }
-});
-// ✅✅✅ END OF FIXED ORDER ROUTE ✅✅✅
-
-// 11. GET ALL ORDERS (ADMIN)
+// 15. GET ALL ORDERS (ADMIN)
 app.get('/orders', async (req, res) => {
   try {
     let orders = [];
@@ -738,14 +640,16 @@ app.get('/orders', async (req, res) => {
   }
 });
 
-// 12. SEED DATABASE
+// 9. SEED DATABASE
 app.post('/seed', async (req, res) => {
   try {
     console.log('🌱 Seeding database...');
     
     if (isConnected && listingsCollection) {
+      // Clear existing data
       await listingsCollection.deleteMany({});
       
+      // Seed new data
       const result = await seedSampleData();
       
       res.json({
@@ -771,7 +675,7 @@ app.post('/seed', async (req, res) => {
   }
 });
 
-// 13. DATABASE STATUS
+// 10. DATABASE STATUS
 app.get('/db-status', async (req, res) => {
   try {
     let status = {
@@ -806,7 +710,7 @@ app.get('/db-status', async (req, res) => {
   }
 });
 
-// 14. ADD TEST DATA
+// 11. ADD TEST DATA
 app.post('/add-test', async (req, res) => {
   try {
     const testData = {
@@ -848,7 +752,7 @@ app.post('/add-test', async (req, res) => {
   }
 });
 
-// 15. GET USER LISTINGS BY EMAIL
+// 12. GET USER LISTINGS BY EMAIL
 app.get('/listings/user/:email', async (req, res) => {
   try {
     const email = req.params.email;
@@ -876,7 +780,7 @@ app.get('/listings/user/:email', async (req, res) => {
 
 // ========== NEW ROUTES FOR TESTING ==========
 
-// 16. ENVIRONMENT CHECK
+// 13. ENVIRONMENT CHECK
 app.get('/env-check', (req, res) => {
   res.json({
     success: true,
@@ -889,7 +793,7 @@ app.get('/env-check', (req, res) => {
   });
 });
 
-// 17. TEST MONGODB CONNECTION
+// 14. TEST MONGODB CONNECTION
 app.get('/test-mongo', async (req, res) => {
   try {
     console.log('🔍 Testing MongoDB connection...');
@@ -919,7 +823,7 @@ app.get('/test-mongo', async (req, res) => {
   }
 });
 
-// 18. PING TEST
+// 15. PING TEST
 app.get('/ping', (req, res) => {
   res.json({
     success: true,
@@ -928,6 +832,8 @@ app.get('/ping', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+
 
 // ========== ERROR HANDLING ==========
 
@@ -959,9 +865,8 @@ app.listen(port, () => {
 📡 Health: https://backend-10-five.vercel.app/health
 🔗 Test: https://backend-10-five.vercel.app/test
 📊 Listings: https://backend-10-five.vercel.app/listings
-🔧 API Listings: https://backend-10-five.vercel.app/api/listings
-📦 User Orders: https://backend-10-five.vercel.app/api/orders/user/:email
 🌱 Seed: https://backend-10-five.vercel.app/seed (POST)
+🔧 DB Status: https://backend-10-five.vercel.app/db-status
   `);
 });
 
