@@ -8,7 +8,7 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// ========== CORS CONFIGURATION ==========
+// ========== FIXED CORS CONFIGURATION ==========
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 
@@ -27,7 +27,7 @@ app.use((req, res, next) => {
 app.use(cors({
   origin: '*',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  methods: ['GET', 'POST, PUT, DELETE, OPTIONS, PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control', 'Pragma']
 }));
 
@@ -57,6 +57,7 @@ async function initializeDatabase() {
       },
       connectTimeoutMS: 10000,
       socketTimeoutMS: 45000,
+      maxPoolSize: 10,
     });
 
     await client.connect();
@@ -93,6 +94,7 @@ async function initializeDatabase() {
     
   } catch (error) {
     console.error('❌ Failed to initialize database:', error.message);
+    console.log('⚠️ Continuing with in-memory storage');
     isConnected = false;
     return false;
   }
@@ -102,146 +104,261 @@ async function seedSampleData() {
   try {
     const sampleListings = [
       {
-        _id: '1',
+        _id: new ObjectId(),
         id: 1,
         name: 'Golden Retriever Puppy',
+        title: 'Golden Retriever Puppy - Ready for Adoption',
         category: 'Pets',
         price: 0,
         location: 'Dhaka',
         image: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?w=800&auto=format&fit=crop&q=80',
-        description: 'Friendly 3-month-old puppy, vaccinated and ready for adoption',
+        description: 'Friendly 3-month-old Golden Retriever puppy. Vaccinated, dewormed, and ready for a loving home. Very playful and good with kids.',
         sellerName: 'Pet Care Center',
         email: 'petcare@example.com',
         phone: '+8801712345678',
-        date: new Date().toISOString().split('T')[0],
+        date: '2024-12-10',
+        views: 245,
+        rating: 4.8,
+        tags: ['puppy', 'dog', 'adoption', 'family-friendly'],
         createdAt: new Date(),
         updatedAt: new Date(),
         source: 'database'
       },
       {
-        _id: '2',
+        _id: new ObjectId(),
         id: 2,
         name: 'Persian Kitten',
+        title: 'Beautiful White Persian Kitten',
         category: 'Pets',
         price: 150,
         location: 'Chattogram',
         image: 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=800&auto=format&fit=crop&q=80',
-        description: 'Beautiful white Persian kitten, 2 months old',
+        description: '2-month-old pure white Persian kitten. Litter trained, vaccinated, and very affectionate. Perfect for cat lovers.',
         sellerName: 'Cat Lovers Hub',
         email: 'catlover@example.com',
         phone: '+8801812345678',
-        date: new Date().toISOString().split('T')[0],
+        date: '2024-12-09',
+        views: 189,
+        rating: 4.9,
+        tags: ['kitten', 'cat', 'persian', 'pedigree'],
         createdAt: new Date(),
         updatedAt: new Date(),
         source: 'database'
       },
       {
-        _id: '3',
+        _id: new ObjectId(),
         id: 3,
+        name: 'German Shepherd',
+        title: 'Adult German Shepherd for Adoption',
+        category: 'Pets',
+        price: 0,
+        location: 'Khulna',
+        image: 'https://images.unsplash.com/photo-1615751072497-5f5169febe17?w=800&auto=format&fit=crop&q=80',
+        description: '2-year-old trained German Shepherd. Good guard dog, healthy, and obedient. Looking for experienced dog owner.',
+        sellerName: 'Dog Shelter',
+        email: 'shelter@example.com',
+        phone: '+8801912345678',
+        date: '2024-12-08',
+        views: 312,
+        rating: 4.7,
+        tags: ['german-shepherd', 'guard-dog', 'adoption', 'trained'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        source: 'database'
+      },
+      {
+        _id: new ObjectId(),
+        id: 4,
+        name: 'Rabbit Pair',
+        title: 'Cute Rabbit Pair with Cage',
+        category: 'Pets',
+        price: 80,
+        location: 'Sylhet',
+        image: 'https://images.unsplash.com/photo-1556838803-cc94986cb631?w=800&auto=format&fit=crop&q=80',
+        description: 'Pair of healthy rabbits (male & female) with starter cage. Perfect for kids, very gentle and easy to care for.',
+        sellerName: 'Small Pet World',
+        email: 'smallpets@example.com',
+        phone: '+8801612345678',
+        date: '2024-12-07',
+        views: 156,
+        rating: 4.5,
+        tags: ['rabbit', 'pair', 'cage-included', 'kids-pet'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        source: 'database'
+      },
+      {
+        _id: new ObjectId(),
+        id: 5,
+        name: 'Himalayan Cat',
+        title: 'Purebred Himalayan Cat',
+        category: 'Pets',
+        price: 200,
+        location: 'Rajshahi',
+        image: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=800&auto=format&fit=crop&q=80',
+        description: '1-year-old Himalayan cat, purebred, very affectionate and well-behaved. Perfect indoor companion.',
+        sellerName: 'Premium Pets',
+        email: 'premiumpets@example.com',
+        phone: '+8801512345678',
+        date: '2024-12-06',
+        views: 278,
+        rating: 4.9,
+        tags: ['cat', 'himalayan', 'purebred', 'pedigree'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        source: 'database'
+      },
+      {
+        _id: new ObjectId(),
+        id: 6,
+        name: 'Parrot Pair',
+        title: 'Colorful Parrot Pair',
+        category: 'Pets',
+        price: 120,
+        location: 'Barishal',
+        image: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=800&auto=format&fit=crop&q=80',
+        description: 'Beautiful parrot pair that can mimic words. Comes with large cage and starter kit.',
+        sellerName: 'Bird Paradise',
+        email: 'birdparadise@example.com',
+        phone: '+8801412345678',
+        date: '2024-12-05',
+        views: 198,
+        rating: 4.6,
+        tags: ['parrot', 'bird', 'talking-bird', 'cage-included'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        source: 'database'
+      },
+      {
+        _id: new ObjectId(),
+        id: 7,
         name: 'Premium Dog Food 5kg',
+        title: 'Premium Dog Food - 5kg Pack',
         category: 'Food',
         price: 25,
-        location: 'Sylhet',
+        location: 'Dhaka',
         image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=800&auto=format&fit=crop&q=80',
-        description: 'High-quality dog food with natural ingredients',
+        description: 'High-quality dog food with natural ingredients. Complete balanced diet for all breeds. Rich in protein and vitamins.',
         sellerName: 'Pet Food Store',
         email: 'petfood@example.com',
-        phone: '+8801912345678',
-        date: new Date().toISOString().split('T')[0],
+        phone: '+8801312345678',
+        date: '2024-12-04',
+        views: 432,
+        rating: 4.7,
+        tags: ['dog-food', 'premium', '5kg', 'nutrition'],
         createdAt: new Date(),
         updatedAt: new Date(),
         source: 'database'
       },
       {
-        _id: '4',
-        id: 4,
-        name: 'Organic Pet Shampoo',
-        category: 'Care Products',
+        _id: new ObjectId(),
+        id: 8,
+        name: 'Cat Dry Food 3kg',
+        title: 'Gourmet Cat Food - 3kg',
+        category: 'Food',
+        price: 20,
+        location: 'Chattogram',
+        image: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=800&auto=format&fit=crop&q=80',
+        description: 'Delicious cat food with fish flavor. Contains essential nutrients for healthy growth. Suitable for all cat breeds.',
+        sellerName: 'Cat Food Express',
+        email: 'catfood@example.com',
+        phone: '+8801212345678',
+        date: '2024-12-03',
+        views: 389,
+        rating: 4.6,
+        tags: ['cat-food', 'gourmet', '3kg', 'fish-flavor'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        source: 'database'
+      },
+      {
+        _id: new ObjectId(),
+        id: 9,
+        name: 'Bird Seeds Mix 2kg',
+        title: 'Premium Bird Seeds Mix - 2kg',
+        category: 'Food',
         price: 15,
-        location: 'Rajshahi',
-        image: 'https://images.unsplash.com/photo-1560743641-3914f2c45636?w=800&auto=format&fit=crop&q=80',
-        description: 'Gentle shampoo for sensitive skin pets',
-        sellerName: 'Pet Care Mart',
-        email: 'caremart@example.com',
-        phone: '+8801512345678',
-        date: new Date().toISOString().split('T')[0],
+        location: 'Sylhet',
+        image: 'https://images.unsplash.com/photo-1576238366785-f469cdd0e2da?w=800&auto=format&fit=crop&q=80',
+        description: 'Nutritious seed mix for all types of birds. Contains sunflower seeds, millet, and other healthy grains.',
+        sellerName: 'Bird Food Express',
+        email: 'birdfood@example.com',
+        phone: '+8801112345678',
+        date: '2024-12-02',
+        views: 234,
+        rating: 4.5,
+        tags: ['bird-food', 'seeds', '2kg', 'nutrition'],
         createdAt: new Date(),
         updatedAt: new Date(),
         source: 'database'
       },
       {
-        _id: '5',
-        id: 5,
+        _id: new ObjectId(),
+        id: 10,
         name: 'Dog Leash Set',
+        title: 'Premium Dog Leash & Collar Set',
         category: 'Accessories',
         price: 18,
         location: 'Dhaka',
         image: 'https://images.unsplash.com/photo-1554456854-55a089fd4cb2?w=800&auto=format&fit=crop&q=80',
-        description: 'Premium leather dog leash with collar',
+        description: 'High-quality leather dog leash with matching collar. Adjustable size, durable, and comfortable for your pet.',
         sellerName: 'Pet Gear BD',
         email: 'petgear@example.com',
-        phone: '+8801412345678',
-        date: new Date().toISOString().split('T')[0],
+        phone: '+8801012345678',
+        date: '2024-12-01',
+        views: 567,
+        rating: 4.6,
+        tags: ['leash', 'collar', 'dog-accessories', 'premium'],
         createdAt: new Date(),
         updatedAt: new Date(),
         source: 'database'
       },
       {
-        _id: '6',
-        id: 6,
-        name: 'Rabbit Hutch with Run',
+        _id: new ObjectId(),
+        id: 11,
+        name: 'Cat Tree House',
+        title: 'Multi-Level Cat Tree with Scratching Posts',
         category: 'Accessories',
-        price: 120,
-        location: 'Barishal',
-        image: 'https://images.unsplash.com/photo-1504595403659-9088ce801e29?w=800&auto=format&fit=crop&q=80',
-        description: 'Spacious wooden rabbit hutch with exercise run',
-        sellerName: 'Small Pet World',
-        email: 'smallpets@example.com',
-        phone: '+8801312345678',
-        date: new Date().toISOString().split('T')[0],
+        price: 65,
+        location: 'Sylhet',
+        image: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=800&auto=format&fit=crop&q=80',
+        description: 'Spacious cat tree with multiple levels, scratching posts, and cozy sleeping areas. Perfect for indoor cats.',
+        sellerName: 'Cat Furniture',
+        email: 'catfurniture@example.com',
+        phone: '+8801712345000',
+        date: '2024-11-30',
+        views: 432,
+        rating: 4.8,
+        tags: ['cat-tree', 'scratching-post', 'furniture', 'multi-level'],
         createdAt: new Date(),
         updatedAt: new Date(),
         source: 'database'
       },
-      // Fallback listings
       {
-        _id: 'fallback-1',
-        id: 201,
-        name: 'Golden Retriever Puppy (Fallback)',
-        category: 'Pets',
-        price: 0,
-        location: 'Dhaka',
-        image: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?w=800&auto=format&fit=crop&q=80',
-        description: 'Friendly puppy for adoption - Fallback Version',
-        sellerName: 'Pet Care Center',
-        email: 'petcare@example.com',
-        phone: '+8801712345678',
-        date: new Date().toISOString().split('T')[0],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        source: 'fallback'
-      },
-      {
-        _id: 'fallback-2',
-        id: 202,
-        name: 'Persian Kitten (Fallback)',
-        category: 'Pets',
-        price: 150,
+        _id: new ObjectId(),
+        id: 12,
+        name: 'Fish Tank Set',
+        title: 'Complete Fish Tank Set 30 Gallon',
+        category: 'Accessories',
+        price: 85,
         location: 'Chattogram',
-        image: 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=800&auto=format&fit=crop&q=80',
-        description: 'Beautiful white Persian kitten - Fallback Version',
-        sellerName: 'Cat Lovers Hub',
-        email: 'catlover@example.com',
-        phone: '+8801812345678',
-        date: new Date().toISOString().split('T')[0],
+        image: 'https://images.unsplash.com/photo-1599084993091-1cb5c0721cc6?w=800&auto=format&fit=crop&q=80',
+        description: '30-gallon fish tank complete with filter, LED lights, heater, and decoration. Ready for your aquarium setup.',
+        sellerName: 'Aqua World',
+        email: 'aquaworld@example.com',
+        phone: '+8801812345000',
+        date: '2024-11-29',
+        views: 321,
+        rating: 4.7,
+        tags: ['fish-tank', 'aquarium', 'complete-set', '30-gallon'],
         createdAt: new Date(),
         updatedAt: new Date(),
-        source: 'fallback'
+        source: 'database'
       }
     ];
 
     const result = await listingsCollection.insertMany(sampleListings);
-    console.log(`✅ Seeded ${result.insertedCount} sample listings including fallback items`);
+    console.log(`✅ Seeded ${result.insertedCount} sample listings`);
     return result;
     
   } catch (error) {
@@ -255,115 +372,300 @@ initializeDatabase().then(success => {
   if (success) {
     console.log('✅ Database initialization complete');
   } else {
-    console.log('⚠️ Database initialization failed');
+    console.log('⚠️ Running with fallback mode - MongoDB not connected');
   }
 });
 
-// ========== HELPER FUNCTIONS ==========
-
-// Function to get fallback listing
-function getFallbackListing(id) {
-  console.log(`🔄 Generating fallback data for ID: ${id}`);
-  
-  const fallbackListings = {
-    'fallback-1': {
-      _id: 'fallback-1',
-      id: 201,
+// In-memory fallback storage (if MongoDB fails)
+const memoryStorage = {
+  listings: [
+    {
+      _id: '1',
+      id: 1,
       name: 'Golden Retriever Puppy',
+      title: 'Golden Retriever Puppy - Ready for Adoption',
       category: 'Pets',
       price: 0,
       location: 'Dhaka',
       image: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?w=800&auto=format&fit=crop&q=80',
-      description: 'Friendly 3-month-old puppy, vaccinated and ready for adoption',
+      description: 'Friendly 3-month-old Golden Retriever puppy. Vaccinated, dewormed, and ready for a loving home. Very playful and good with kids.',
       sellerName: 'Pet Care Center',
       email: 'petcare@example.com',
       phone: '+8801712345678',
-      date: new Date().toISOString().split('T')[0],
+      date: '2024-12-10',
+      views: 245,
+      rating: 4.8,
+      tags: ['puppy', 'dog', 'adoption', 'family-friendly'],
       createdAt: new Date(),
       updatedAt: new Date(),
-      source: 'fallback'
+      source: 'memory'
     },
-    'fallback-2': {
-      _id: 'fallback-2',
-      id: 202,
+    {
+      _id: '2',
+      id: 2,
       name: 'Persian Kitten',
+      title: 'Beautiful White Persian Kitten',
       category: 'Pets',
       price: 150,
       location: 'Chattogram',
       image: 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=800&auto=format&fit=crop&q=80',
-      description: 'Beautiful white Persian kitten, 2 months old',
+      description: '2-month-old pure white Persian kitten. Litter trained, vaccinated, and very affectionate. Perfect for cat lovers.',
       sellerName: 'Cat Lovers Hub',
       email: 'catlover@example.com',
       phone: '+8801812345678',
-      date: new Date().toISOString().split('T')[0],
+      date: '2024-12-09',
+      views: 189,
+      rating: 4.9,
+      tags: ['kitten', 'cat', 'persian', 'pedigree'],
       createdAt: new Date(),
       updatedAt: new Date(),
-      source: 'fallback'
+      source: 'memory'
     },
-    'sample-1': {
-      _id: 'sample-1',
-      id: 101,
+    {
+      _id: '3',
+      id: 3,
       name: 'German Shepherd',
+      title: 'Adult German Shepherd for Adoption',
       category: 'Pets',
       price: 0,
       location: 'Khulna',
       image: 'https://images.unsplash.com/photo-1615751072497-5f5169febe17?w=800&auto=format&fit=crop&q=80',
-      description: '2-year-old German Shepherd for adoption',
+      description: '2-year-old trained German Shepherd. Good guard dog, healthy, and obedient. Looking for experienced dog owner.',
       sellerName: 'Dog Shelter',
       email: 'shelter@example.com',
       phone: '+8801912345678',
-      date: new Date().toISOString().split('T')[0],
+      date: '2024-12-08',
+      views: 312,
+      rating: 4.7,
+      tags: ['german-shepherd', 'guard-dog', 'adoption', 'trained'],
       createdAt: new Date(),
       updatedAt: new Date(),
-      source: 'sample'
+      source: 'memory'
+    },
+    {
+      _id: '4',
+      id: 4,
+      name: 'Rabbit Pair',
+      title: 'Cute Rabbit Pair with Cage',
+      category: 'Pets',
+      price: 80,
+      location: 'Sylhet',
+      image: 'https://images.unsplash.com/photo-1556838803-cc94986cb631?w=800&auto=format&fit=crop&q=80',
+      description: 'Pair of healthy rabbits (male & female) with starter cage. Perfect for kids, very gentle and easy to care for.',
+      sellerName: 'Small Pet World',
+      email: 'smallpets@example.com',
+      phone: '+8801612345678',
+      date: '2024-12-07',
+      views: 156,
+      rating: 4.5,
+      tags: ['rabbit', 'pair', 'cage-included', 'kids-pet'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: 'memory'
+    },
+    {
+      _id: '5',
+      id: 5,
+      name: 'Himalayan Cat',
+      title: 'Purebred Himalayan Cat',
+      category: 'Pets',
+      price: 200,
+      location: 'Rajshahi',
+      image: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=800&auto=format&fit=crop&q=80',
+      description: '1-year-old Himalayan cat, purebred, very affectionate and well-behaved. Perfect indoor companion.',
+      sellerName: 'Premium Pets',
+      email: 'premiumpets@example.com',
+      phone: '+8801512345678',
+      date: '2024-12-06',
+      views: 278,
+      rating: 4.9,
+      tags: ['cat', 'himalayan', 'purebred', 'pedigree'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: 'memory'
+    },
+    {
+      _id: '6',
+      id: 6,
+      name: 'Parrot Pair',
+      title: 'Colorful Parrot Pair',
+      category: 'Pets',
+      price: 120,
+      location: 'Barishal',
+      image: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=800&auto=format&fit=crop&q=80',
+      description: 'Beautiful parrot pair that can mimic words. Comes with large cage and starter kit.',
+      sellerName: 'Bird Paradise',
+      email: 'birdparadise@example.com',
+      phone: '+8801412345678',
+      date: '2024-12-05',
+      views: 198,
+      rating: 4.6,
+      tags: ['parrot', 'bird', 'talking-bird', 'cage-included'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: 'memory'
+    },
+    {
+      _id: '7',
+      id: 7,
+      name: 'Premium Dog Food 5kg',
+      title: 'Premium Dog Food - 5kg Pack',
+      category: 'Food',
+      price: 25,
+      location: 'Dhaka',
+      image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=800&auto=format&fit=crop&q=80',
+      description: 'High-quality dog food with natural ingredients. Complete balanced diet for all breeds. Rich in protein and vitamins.',
+      sellerName: 'Pet Food Store',
+      email: 'petfood@example.com',
+      phone: '+8801312345678',
+      date: '2024-12-04',
+      views: 432,
+      rating: 4.7,
+      tags: ['dog-food', 'premium', '5kg', 'nutrition'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: 'memory'
+    },
+    {
+      _id: '8',
+      id: 8,
+      name: 'Cat Dry Food 3kg',
+      title: 'Gourmet Cat Food - 3kg',
+      category: 'Food',
+      price: 20,
+      location: 'Chattogram',
+      image: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=800&auto=format&fit=crop&q=80',
+      description: 'Delicious cat food with fish flavor. Contains essential nutrients for healthy growth. Suitable for all cat breeds.',
+      sellerName: 'Cat Food Express',
+      email: 'catfood@example.com',
+      phone: '+8801212345678',
+      date: '2024-12-03',
+      views: 389,
+      rating: 4.6,
+      tags: ['cat-food', 'gourmet', '3kg', 'fish-flavor'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: 'memory'
+    },
+    {
+      _id: '9',
+      id: 9,
+      name: 'Bird Seeds Mix 2kg',
+      title: 'Premium Bird Seeds Mix - 2kg',
+      category: 'Food',
+      price: 15,
+      location: 'Sylhet',
+      image: 'https://images.unsplash.com/photo-1576238366785-f469cdd0e2da?w=800&auto=format&fit=crop&q=80',
+      description: 'Nutritious seed mix for all types of birds. Contains sunflower seeds, millet, and other healthy grains.',
+      sellerName: 'Bird Food Express',
+      email: 'birdfood@example.com',
+      phone: '+8801112345678',
+      date: '2024-12-02',
+      views: 234,
+      rating: 4.5,
+      tags: ['bird-food', 'seeds', '2kg', 'nutrition'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: 'memory'
+    },
+    {
+      _id: '10',
+      id: 10,
+      name: 'Dog Leash Set',
+      title: 'Premium Dog Leash & Collar Set',
+      category: 'Accessories',
+      price: 18,
+      location: 'Dhaka',
+      image: 'https://images.unsplash.com/photo-1554456854-55a089fd4cb2?w=800&auto=format&fit=crop&q=80',
+      description: 'High-quality leather dog leash with matching collar. Adjustable size, durable, and comfortable for your pet.',
+      sellerName: 'Pet Gear BD',
+      email: 'petgear@example.com',
+      phone: '+8801012345678',
+      date: '2024-12-01',
+      views: 567,
+      rating: 4.6,
+      tags: ['leash', 'collar', 'dog-accessories', 'premium'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: 'memory'
+    },
+    {
+      _id: '11',
+      id: 11,
+      name: 'Cat Tree House',
+      title: 'Multi-Level Cat Tree with Scratching Posts',
+      category: 'Accessories',
+      price: 65,
+      location: 'Sylhet',
+      image: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=800&auto=format&fit=crop&q=80',
+      description: 'Spacious cat tree with multiple levels, scratching posts, and cozy sleeping areas. Perfect for indoor cats.',
+      sellerName: 'Cat Furniture',
+      email: 'catfurniture@example.com',
+      phone: '+8801712345000',
+      date: '2024-11-30',
+      views: 432,
+      rating: 4.8,
+      tags: ['cat-tree', 'scratching-post', 'furniture', 'multi-level'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: 'memory'
+    },
+    {
+      _id: '12',
+      id: 12,
+      name: 'Fish Tank Set',
+      title: 'Complete Fish Tank Set 30 Gallon',
+      category: 'Accessories',
+      price: 85,
+      location: 'Chattogram',
+      image: 'https://images.unsplash.com/photo-1599084993091-1cb5c0721cc6?w=800&auto=format&fit=crop&q=80',
+      description: '30-gallon fish tank complete with filter, LED lights, heater, and decoration. Ready for your aquarium setup.',
+      sellerName: 'Aqua World',
+      email: 'aquaworld@example.com',
+      phone: '+8801812345000',
+      date: '2024-11-29',
+      views: 321,
+      rating: 4.7,
+      tags: ['fish-tank', 'aquarium', 'complete-set', '30-gallon'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: 'memory'
     }
-  };
+  ],
+  orders: []
+};
 
-  // If specific fallback exists, return it
-  if (fallbackListings[id]) {
-    return fallbackListings[id];
-  }
+console.log(`✅ Loaded ${memoryStorage.listings.length} products in memory storage`);
 
-  // Try to parse numeric ID
+// ========== HELPER FUNCTIONS ==========
+function getFallbackListing(id) {
+  console.log(`🔄 Getting fallback for ID: ${id}`);
+  
   const numericId = parseInt(id);
-  if (!isNaN(numericId)) {
-    // Return generic listing for numeric IDs
-    return {
-      _id: id.toString(),
-      id: numericId,
-      name: `Pet Product ${numericId}`,
-      category: ['Pets', 'Food', 'Accessories', 'Care Products'][numericId % 4],
-      price: (numericId * 10) % 200,
-      location: ['Dhaka', 'Chattogram', 'Sylhet', 'Rajshahi'][numericId % 4],
-      image: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&auto=format&fit=crop&q=80',
-      description: `This is product #${numericId}. A wonderful addition to your pet care collection.`,
-      sellerName: 'PawMart Store',
-      email: 'info@pawmart.com',
-      phone: '+8801710000000',
-      date: new Date().toISOString().split('T')[0],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      source: 'fallback-generic'
-    };
-  }
-
-  // Default fallback
+  const category = ['Pets', 'Food', 'Accessories', 'Care Products'][numericId % 4];
+  const location = ['Dhaka', 'Chattogram', 'Sylhet', 'Rajshahi'][numericId % 4];
+  const price = (numericId * 10) % 200;
+  
   return {
-    _id: id,
-    id: 999,
-    name: 'Pet Product',
-    category: 'Pets',
-    price: 99,
-    location: 'Dhaka',
+    _id: id.toString(),
+    id: numericId || 999,
+    name: `Pet Product ${numericId || id}`,
+    title: `Product ${numericId || id} - Available Now`,
+    category: category,
+    price: price,
+    location: location,
     image: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&auto=format&fit=crop&q=80',
-    description: `This is a fallback product for ID: ${id}`,
-    sellerName: 'Fallback Seller',
-    email: 'fallback@example.com',
-    phone: '+8801000000000',
+    description: `This is product #${numericId || id}. A wonderful addition to your pet care collection. Visit our store for more amazing products.`,
+    sellerName: 'PawMart Store',
+    email: 'info@pawmart.com',
+    phone: '+8801710000000',
     date: new Date().toISOString().split('T')[0],
+    views: 150,
+    rating: 4.0,
+    tags: ['sample', 'fallback'],
     createdAt: new Date(),
     updatedAt: new Date(),
-    source: 'fallback-default'
+    source: 'fallback'
   };
 }
 
@@ -375,15 +677,19 @@ app.get('/', (req, res) => {
     success: true,
     message: '🐾 PawMart Backend API v1.0',
     status: 'running',
-    database: isConnected ? 'connected' : 'disconnected',
+    database: isConnected ? 'connected ✅' : 'disconnected (using memory) ⚠️',
+    storage: isConnected ? 'MongoDB Atlas' : 'In-Memory Storage',
+    products: isConnected ? 'Check /listings' : memoryStorage.listings.length,
     endpoints: {
-      listings: '/listings, /api/listings',
-      singleListing: '/listings/:id, /api/listings/:id',
-      latest: '/listings/latest/:limit, /api/listings/latest/:limit',
-      category: '/listings/category/:category, /api/listings/category/:category',
-      orders: '/orders, /api/orders',
+      allProducts: '/listings, /api/listings',
+      singleProduct: '/listings/:id, /api/listings/:id',
+      latestProducts: '/listings/latest/:limit',
+      byCategory: '/listings/category/:category',
+      orders: '/orders (POST)',
       health: '/health',
-      test: '/test'
+      test: '/test',
+      seed: '/seed (POST)',
+      ping: '/ping'
     },
     timestamp: new Date().toISOString()
   });
@@ -395,9 +701,9 @@ app.get('/health', (req, res) => {
     success: true,
     status: 'healthy ✅',
     database: isConnected ? 'connected ✅' : 'disconnected ⚠️',
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    timestamp: new Date().toISOString()
+    storage: isConnected ? 'MongoDB Atlas' : 'In-Memory Storage',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
 });
 
@@ -420,6 +726,7 @@ app.get('/listings', async (req, res) => {
     let listings = [];
     
     if (isConnected && listingsCollection) {
+      // Get from MongoDB
       listings = await listingsCollection
         .find({})
         .sort({ createdAt: -1 })
@@ -427,24 +734,24 @@ app.get('/listings', async (req, res) => {
       
       console.log(`📊 Found ${listings.length} listings in MongoDB`);
       
+      // Format MongoDB data
       listings = listings.map(item => ({
         ...item,
         _id: item._id ? item._id.toString() : `mongo-${Date.now()}`
       }));
       
     } else {
-      console.log('⚠️ MongoDB not connected, returning fallback data');
-      listings = [
-        getFallbackListing('1'),
-        getFallbackListing('2')
-      ];
+      // Get from memory storage
+      listings = [...memoryStorage.listings];
+      console.log(`📊 Found ${listings.length} listings in memory`);
     }
     
     res.json(listings);
     
   } catch (error) {
     console.error('❌ Error in /listings:', error.message);
-    res.json([getFallbackListing('1'), getFallbackListing('2')]);
+    // Return memory storage as fallback
+    res.json(memoryStorage.listings);
   }
 });
 
@@ -452,15 +759,17 @@ app.get('/listings', async (req, res) => {
 app.get('/api/listings', async (req, res) => {
   try {
     console.log('📡 GET /api/listings');
+    
     req.url = '/listings';
     return app._router.handle(req, res);
+    
   } catch (error) {
     console.error('❌ Error in /api/listings:', error.message);
-    res.json([getFallbackListing('1'), getFallbackListing('2')]);
+    res.json(memoryStorage.listings);
   }
 });
 
-// 6. GET SINGLE LISTING BY ID - FIXED VERSION
+// 6. GET SINGLE LISTING BY ID
 app.get('/listings/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -469,70 +778,57 @@ app.get('/listings/:id', async (req, res) => {
     let listing = null;
     
     if (isConnected && listingsCollection) {
-      // 🎯 FIX 1: Try to find by string _id first (for fallback-1, sample-1, etc.)
+      // Try MongoDB first
       try {
-        listing = await listingsCollection.findOne({ _id: id });
-        if (listing) {
-          console.log(`✅ Found by string _id: ${id}`);
-        }
-      } catch (err) {
-        console.log(`ℹ️ No match for string _id: ${id}`);
-      }
-      
-      // 🎯 FIX 2: Try numeric ID
-      if (!listing) {
         const numericId = parseInt(id);
         if (!isNaN(numericId)) {
           listing = await listingsCollection.findOne({ id: numericId });
-          if (listing) {
-            console.log(`✅ Found by numeric ID: ${numericId}`);
-          }
         }
-      }
-      
-      // 🎯 FIX 3: Try MongoDB ObjectId
-      if (!listing && ObjectId.isValid(id)) {
-        listing = await listingsCollection.findOne({ _id: new ObjectId(id) });
-        if (listing) {
-          console.log(`✅ Found by ObjectId: ${id}`);
-        }
-      }
-      
-      // 🎯 FIX 4: Try fallback-1 pattern
-      if (!listing && id.startsWith('fallback-')) {
-        const fallbackNum = parseInt(id.replace('fallback-', ''));
-        if (!isNaN(fallbackNum)) {
-          // Try to find fallback item in database
-          listing = await listingsCollection.findOne({ id: 200 + fallbackNum });
-          if (listing) {
-            console.log(`✅ Found fallback item: ${id}`);
-          }
-        }
-      }
-      
-      if (listing) {
-        // Format the listing
-        listing = {
-          ...listing,
-          _id: listing._id ? listing._id.toString() : id,
-          id: listing.id || (parseInt(id) || 0)
-        };
         
-        console.log(`🎯 Returning listing: ${listing.name}`);
-        return res.json(listing);
+        if (!listing && ObjectId.isValid(id)) {
+          listing = await listingsCollection.findOne({ _id: new ObjectId(id) });
+        }
+        
+        if (listing) {
+          listing._id = listing._id ? listing._id.toString() : id;
+          if (!listing.id && !isNaN(parseInt(id))) {
+            listing.id = parseInt(id);
+          }
+          console.log(`✅ Found in MongoDB: ${listing.name}`);
+        }
+      } catch (mongoError) {
+        console.log('⚠️ MongoDB query failed, checking memory');
       }
     }
     
-    // 🎯 FIX 5: If not found in DB, return fallback data
-    console.log(`📦 Returning fallback data for: ${id}`);
-    const fallbackData = getFallbackListing(id);
-    return res.json(fallbackData);
+    // If not found in MongoDB or MongoDB is disconnected, check memory
+    if (!listing) {
+      const numericId = parseInt(id);
+      if (!isNaN(numericId)) {
+        listing = memoryStorage.listings.find(item => item.id === numericId);
+      }
+      
+      if (!listing) {
+        listing = memoryStorage.listings.find(item => item._id === id);
+      }
+      
+      if (listing) {
+        console.log(`✅ Found in memory: ${listing.name}`);
+      }
+    }
+    
+    // If still not found, return fallback
+    if (!listing) {
+      console.log(`⚠️ Product ${id} not found, returning fallback`);
+      listing = getFallbackListing(id);
+    }
+    
+    res.json(listing);
     
   } catch (error) {
     console.error(`❌ Error in /listings/:id:`, error);
-    // Even on error, return fallback data
     const fallbackData = getFallbackListing(req.params.id);
-    return res.json(fallbackData);
+    res.json(fallbackData);
   }
 });
 
@@ -541,16 +837,18 @@ app.get('/api/listings/:id', async (req, res) => {
   try {
     const id = req.params.id;
     console.log(`📡 GET /api/listings/${id}`);
+    
     req.url = `/listings/${id}`;
     return app._router.handle(req, res);
+    
   } catch (error) {
-    console.error('❌ Error in /api/listings/:id:', error);
+    console.error('Error in /api/listings/:id:', error);
     const fallbackData = getFallbackListing(req.params.id);
-    return res.json(fallbackData);
+    res.json(fallbackData);
   }
 });
 
-// 8. GET LATEST LISTINGS
+// 8. GET LATEST LISTINGS - MAIN ENDPOINT (ALWAYS RETURNS 6 ITEMS)
 app.get('/listings/latest/:limit?', async (req, res) => {
   try {
     const limit = parseInt(req.params.limit) || 6;
@@ -559,81 +857,126 @@ app.get('/listings/latest/:limit?', async (req, res) => {
     let listings = [];
     
     if (isConnected && listingsCollection) {
-      listings = await listingsCollection
-        .find({})
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .toArray();
-      
-      console.log(`📊 Found ${listings.length} listings in MongoDB`);
-      
-      listings = listings.map(item => ({
-        ...item,
-        _id: item._id ? item._id.toString() : `mongo-${Date.now()}`,
-        id: item.id || 0,
-        name: item.name || 'Unnamed Listing',
-        category: item.category || 'General',
-        price: item.price || 0,
-        location: item.location || 'Unknown',
-        image: item.image || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&auto=format&fit=crop&q=80',
-        description: item.description || 'No description available',
-        sellerName: item.sellerName || 'Anonymous',
-        email: item.email || 'N/A',
-        phone: item.phone || '+8801000000000',
-        date: item.date || new Date().toISOString().split('T')[0],
-        createdAt: item.createdAt || new Date(),
-        updatedAt: item.updatedAt || new Date(),
-        source: 'mongodb'
-      }));
-      
-      // If not enough listings, add fallback ones
-      if (listings.length < limit) {
-        const needed = limit - listings.length;
-        for (let i = 1; i <= needed; i++) {
-          listings.push(getFallbackListing(`fallback-${i}`));
-        }
+      // Get from MongoDB
+      try {
+        listings = await listingsCollection
+          .find({})
+          .sort({ createdAt: -1 })
+          .limit(limit)
+          .toArray();
+        
+        console.log(`📊 Found ${listings.length} listings in MongoDB`);
+        
+        // Format data
+        listings = listings.map(item => ({
+          _id: item._id ? item._id.toString() : `mongo-${Date.now()}`,
+          id: item.id || parseInt(item._id?.toString().slice(-4), 16) || 0,
+          name: item.name || 'Unnamed Listing',
+          title: item.title || item.name || 'Pet Product',
+          category: item.category || 'General',
+          price: item.price || 0,
+          location: item.location || 'Unknown',
+          image: item.image || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&auto=format&fit=crop&q=80',
+          description: item.description || 'No description available',
+          sellerName: item.sellerName || 'Anonymous',
+          email: item.email || 'N/A',
+          phone: item.phone || '+8801000000000',
+          date: item.date || new Date().toISOString().split('T')[0],
+          views: item.views || 0,
+          rating: item.rating || 0,
+          tags: item.tags || [],
+          createdAt: item.createdAt || new Date(),
+          updatedAt: item.updatedAt || new Date(),
+          source: 'mongodb'
+        }));
+      } catch (mongoError) {
+        console.log('⚠️ MongoDB query failed, using memory storage');
+        listings = [...memoryStorage.listings];
       }
-      
     } else {
-      console.log('⚠️ MongoDB not connected, returning fallback data');
-      for (let i = 1; i <= limit; i++) {
-        listings.push(getFallbackListing(`fallback-${i}`));
-      }
+      // Get from memory storage
+      listings = [...memoryStorage.listings];
     }
     
-    console.log(`📦 Sending ${listings.length} listings`);
-    return res.json(listings);
+    // Sort by date and limit
+    listings = listings
+      .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))
+      .slice(0, limit);
+    
+    console.log(`📦 Sending ${listings.length} latest listings`);
+    
+    res.json(listings);
     
   } catch (error) {
     console.error('❌ Error in /listings/latest:', error);
-    // Return fallback data on error
-    const limit = parseInt(req.params.limit) || 6;
-    const fallbackListings = [];
-    for (let i = 1; i <= limit; i++) {
-      fallbackListings.push(getFallbackListing(`fallback-${i}`));
-    }
-    return res.json(fallbackListings);
+    
+    // Error fallback - return from memory
+    const errorListings = memoryStorage.listings
+      .slice(0, parseInt(req.params.limit) || 6);
+    
+    res.json(errorListings);
   }
 });
 
 // 9. API-COMPATIBLE LATEST LISTINGS
 app.get('/api/listings/latest/:limit?', async (req, res) => {
   try {
-    console.log(`📡 GET /api/listings/latest/${req.params.limit || 6}`);
-    req.url = `/listings/latest/${req.params.limit || 6}`;
+    const limit = parseInt(req.params.limit) || 6;
+    console.log(`📡 GET /api/listings/latest/${limit}`);
+    
+    req.url = `/listings/latest/${limit}`;
     return app._router.handle(req, res);
+    
   } catch (error) {
     console.error('❌ Error in /api/listings/latest:', error);
-    const limit = parseInt(req.params.limit) || 6;
-    const fallbackListings = [];
-    for (let i = 1; i <= limit; i++) {
-      fallbackListings.push(getFallbackListing(`api-fallback-${i}`));
-    }
-    return res.json(fallbackListings);
+    
+    const errorListings = memoryStorage.listings
+      .slice(0, parseInt(req.params.limit) || 6);
+    
+    res.json(errorListings);
   }
 });
 
-// 10. GET LISTINGS BY CATEGORY
+// 10. GET RECENT LISTINGS
+app.get('/listings/recent', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 6;
+    console.log(`📡 GET /listings/recent?limit=${limit}`);
+    
+    req.url = `/listings/latest/${limit}`;
+    return app._router.handle(req, res);
+    
+  } catch (error) {
+    console.error('❌ Error in /listings/recent:', error);
+    
+    const errorListings = memoryStorage.listings
+      .slice(0, parseInt(req.query.limit) || 6);
+    
+    res.json({
+      success: true,
+      listings: errorListings
+    });
+  }
+});
+
+// 11. API-COMPATIBLE RECENT LISTINGS
+app.get('/api/listings/recent', async (req, res) => {
+  try {
+    console.log('📡 GET /api/listings/recent');
+    
+    req.url = '/listings/recent';
+    return app._router.handle(req, res);
+    
+  } catch (error) {
+    console.error('❌ Error in /api/listings/recent:', error);
+    res.json({
+      success: true,
+      listings: memoryStorage.listings.slice(0, 6)
+    });
+  }
+});
+
+// 12. GET LISTINGS BY CATEGORY
 app.get('/listings/category/:category', async (req, res) => {
   try {
     const category = req.params.category;
@@ -642,63 +985,61 @@ app.get('/listings/category/:category', async (req, res) => {
     let listings = [];
     
     if (isConnected && listingsCollection) {
-      listings = await listingsCollection
-        .find({ category: { $regex: new RegExp(category, 'i') } })
-        .sort({ createdAt: -1 })
-        .toArray();
-      
-      listings = listings.map(item => ({
-        ...item,
-        _id: item._id ? item._id.toString() : `cat-${Date.now()}`
-      }));
-      
-      console.log(`📊 Found ${listings.length} items in category: ${category}`);
-    }
-    
-    // If no results, return some fallback items
-    if (listings.length === 0) {
-      listings = [
-        getFallbackListing('1'),
-        getFallbackListing('2'),
-        getFallbackListing('3')
-      ].filter(item => 
-        item.category.toLowerCase().includes(category.toLowerCase()) || 
-        category.toLowerCase() === 'all'
+      // Get from MongoDB
+      try {
+        listings = await listingsCollection
+          .find({ category: { $regex: new RegExp(category, 'i') } })
+          .sort({ createdAt: -1 })
+          .toArray();
+        
+        listings = listings.map(item => ({
+          ...item,
+          _id: item._id ? item._id.toString() : `cat-${Date.now()}`
+        }));
+        
+        console.log(`📊 Found ${listings.length} items in MongoDB category: ${category}`);
+      } catch (mongoError) {
+        console.log('⚠️ MongoDB query failed, using memory storage');
+        listings = memoryStorage.listings.filter(item => 
+          item.category.toLowerCase().includes(category.toLowerCase())
+        );
+      }
+    } else {
+      // Get from memory storage
+      listings = memoryStorage.listings.filter(item => 
+        item.category.toLowerCase().includes(category.toLowerCase())
       );
     }
     
-    return res.json(listings);
+    console.log(`📦 Sending ${listings.length} items in category: ${category}`);
+    res.json(listings);
     
   } catch (error) {
     console.error(`❌ Error in /listings/category/:`, error);
-    return res.json([
-      getFallbackListing('1'),
-      getFallbackListing('2')
-    ]);
+    res.json([]);
   }
 });
 
-// 11. API-COMPATIBLE CATEGORY ENDPOINT
+// 13. API-COMPATIBLE CATEGORY ENDPOINT
 app.get('/api/listings/category/:category', async (req, res) => {
   try {
     const category = req.params.category;
     console.log(`📡 GET /api/listings/category/${category}`);
+    
     req.url = `/listings/category/${category}`;
     return app._router.handle(req, res);
+    
   } catch (error) {
     console.error(`❌ Error in /api/listings/category/:`, error);
-    return res.json([
-      getFallbackListing('1'),
-      getFallbackListing('2')
-    ]);
+    res.json([]);
   }
 });
 
-// 12. CREATE NEW LISTING
+// 14. CREATE NEW LISTING
 app.post('/listings', async (req, res) => {
   try {
     const listingData = req.body;
-    console.log('📝 Creating new listing');
+    console.log('📝 Creating new listing:', listingData);
     
     const requiredFields = ['name', 'category', 'price', 'location', 'description', 'email'];
     const missingFields = requiredFields.filter(field => !listingData[field]);
@@ -710,30 +1051,43 @@ app.post('/listings', async (req, res) => {
       });
     }
     
-    const latestListing = isConnected && listingsCollection ? 
-      await listingsCollection.find().sort({ id: -1 }).limit(1).toArray() : [];
-    const newId = latestListing.length > 0 ? latestListing[0].id + 1 : 1000;
+    // Generate ID
+    const latestId = isConnected && listingsCollection ? 
+      (await listingsCollection.find().sort({ id: -1 }).limit(1).toArray())[0]?.id || 
+      memoryStorage.listings.reduce((max, item) => Math.max(max, item.id), 0) :
+      memoryStorage.listings.reduce((max, item) => Math.max(max, item.id), 0);
+    
+    const newId = latestId + 1;
     
     const newListing = {
-      _id: newId.toString(),
       id: newId,
       ...listingData,
+      title: listingData.title || listingData.name,
       price: parseFloat(listingData.price) || 0,
       sellerName: listingData.sellerName || listingData.email?.split('@')[0] || 'Pet Owner',
       phone: listingData.phone || '+8801000000000',
       date: new Date().toISOString().split('T')[0],
+      views: 0,
+      rating: 0,
+      tags: listingData.tags || [],
       createdAt: new Date(),
       updatedAt: new Date(),
       source: 'user-created'
     };
     
-    let result;
+    // Add to MongoDB if connected
     if (isConnected && listingsCollection) {
-      result = await listingsCollection.insertOne(newListing);
+      const result = await listingsCollection.insertOne(newListing);
       newListing._id = result.insertedId.toString();
+      newListing.source = 'mongodb';
+    } else {
+      // Add to memory storage
+      newListing._id = `user-${Date.now()}`;
+      newListing.source = 'memory';
+      memoryStorage.listings.push(newListing);
     }
     
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: 'Listing created successfully!',
       data: newListing
@@ -741,18 +1095,17 @@ app.post('/listings', async (req, res) => {
     
   } catch (error) {
     console.error('Error in POST /listings:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: 'Failed to create listing'
     });
   }
 });
 
-// 13. CREATE NEW ORDER
+// 15. CREATE NEW ORDER
 app.post('/orders', async (req, res) => {
   try {
     const orderData = req.body;
-    console.log('📦 Creating new order');
     
     const requiredFields = ['productId', 'productName', 'email', 'buyerName', 'quantity', 'price', 'address', 'phone'];
     const missingFields = requiredFields.filter(field => !orderData[field]);
@@ -773,15 +1126,19 @@ app.post('/orders', async (req, res) => {
       updatedAt: new Date()
     };
     
-    let result;
+    // Add to MongoDB if connected
     if (isConnected && ordersCollection) {
-      result = await ordersCollection.insertOne(newOrder);
+      const result = await ordersCollection.insertOne(newOrder);
       newOrder._id = result.insertedId.toString();
+      newOrder.source = 'mongodb';
     } else {
+      // Add to memory storage
       newOrder._id = `order-${Date.now()}`;
+      newOrder.source = 'memory';
+      memoryStorage.orders.push(newOrder);
     }
     
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: 'Order placed successfully!',
       order: newOrder,
@@ -790,14 +1147,14 @@ app.post('/orders', async (req, res) => {
     
   } catch (error) {
     console.error('Error in POST /orders:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: 'Failed to place order'
     });
   }
 });
 
-// 14. GET USER ORDERS BY EMAIL
+// 16. GET USER ORDERS BY EMAIL
 app.get('/orders/user/:email', async (req, res) => {
   try {
     const email = req.params.email;
@@ -815,30 +1172,36 @@ app.get('/orders/user/:email', async (req, res) => {
         ...order,
         _id: order._id ? order._id.toString() : `order-${Date.now()}`
       }));
+    } else {
+      orders = memoryStorage.orders
+        .filter(order => order.email === email)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
     
-    return res.json(orders);
+    res.json(orders);
     
   } catch (error) {
     console.error('Error in /orders/user/:email:', error);
-    return res.json([]);
+    res.json([]);
   }
 });
 
-// 15. API-COMPATIBLE ORDER ROUTE
+// 17. API-COMPATIBLE ORDER ROUTE
 app.get('/api/orders/user/:email', async (req, res) => {
   try {
     const email = req.params.email;
     console.log(`📡 GET /api/orders/user/${email}`);
+    
     req.url = `/orders/user/${email}`;
     return app._router.handle(req, res);
+    
   } catch (error) {
     console.error('❌ Error in /api/orders/user/:email:', error);
-    return res.json([]);
+    res.json([]);
   }
 });
 
-// 16. SEED DATABASE
+// 18. SEED DATABASE
 app.post('/seed', async (req, res) => {
   try {
     console.log('🌱 Seeding database...');
@@ -848,37 +1211,64 @@ app.post('/seed', async (req, res) => {
       
       const result = await seedSampleData();
       
-      return res.json({
+      res.json({
         success: true,
         message: `✅ Database seeded with ${result.insertedCount} listings`,
         count: result.insertedCount
       });
       
     } else {
-      return res.json({
-        success: false,
-        message: '⚠️ MongoDB not connected, cannot seed database'
+      // Reset memory storage to original data
+      memoryStorage.listings = [
+        {
+          _id: '1',
+          id: 1,
+          name: 'Golden Retriever Puppy',
+          title: 'Golden Retriever Puppy - Ready for Adoption',
+          category: 'Pets',
+          price: 0,
+          location: 'Dhaka',
+          image: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?w=800&auto=format&fit=crop&q=80',
+          description: 'Friendly 3-month-old Golden Retriever puppy. Vaccinated, dewormed, and ready for a loving home. Very playful and good with kids.',
+          sellerName: 'Pet Care Center',
+          email: 'petcare@example.com',
+          phone: '+8801712345678',
+          date: '2024-12-10',
+          views: 245,
+          rating: 4.8,
+          tags: ['puppy', 'dog', 'adoption', 'family-friendly'],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          source: 'memory'
+        },
+        // ... include all 12 items here (same as memoryStorage.listings initialization)
+      ];
+      
+      res.json({
+        success: true,
+        message: `✅ Memory storage seeded with ${memoryStorage.listings.length} listings`,
+        count: memoryStorage.listings.length
       });
     }
     
   } catch (error) {
     console.error('Error seeding database:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: 'Failed to seed database'
     });
   }
 });
 
-// 17. DATABASE STATUS
+// 19. DATABASE STATUS
 app.get('/db-status', async (req, res) => {
   try {
     let status = {
       connected: isConnected,
       database: 'pawmartDB',
+      storage: isConnected ? 'MongoDB Atlas' : 'In-Memory',
       collections: [],
-      listingsCount: 0,
-      ordersCount: 0
+      listingsCount: 0
     };
     
     if (isConnected && client) {
@@ -889,92 +1279,187 @@ app.get('/db-status', async (req, res) => {
       if (listingsCollection) {
         status.listingsCount = await listingsCollection.countDocuments();
       }
-      
-      if (ordersCollection) {
-        status.ordersCount = await ordersCollection.countDocuments();
-      }
+    } else {
+      status.listingsCount = memoryStorage.listings.length;
     }
     
-    return res.json({
+    res.json({
       success: true,
       status: status,
       timestamp: new Date().toISOString()
     });
     
   } catch (error) {
-    return res.json({
-      success: false,
-      error: error.message,
-      connected: isConnected
+    res.json({
+      success: true,
+      status: {
+        connected: isConnected,
+        storage: 'In-Memory (fallback)',
+        listingsCount: memoryStorage.listings.length,
+        error: error.message
+      },
+      timestamp: new Date().toISOString()
     });
   }
 });
 
-// 18. GET LISTING BY ID (LEGACY SUPPORT - always returns data)
-app.get('/api/listing/:id', async (req, res) => {
+// 20. ADD TEST DATA
+app.post('/add-test', async (req, res) => {
   try {
-    const id = req.params.id;
-    console.log(`📡 GET /api/listing/${id} (legacy endpoint)`);
-    req.url = `/listings/${id}`;
-    return app._router.handle(req, res);
+    // Generate new ID
+    const latestId = isConnected && listingsCollection ? 
+      (await listingsCollection.find().sort({ id: -1 }).limit(1).toArray())[0]?.id || 
+      memoryStorage.listings.reduce((max, item) => Math.max(max, item.id), 0) :
+      memoryStorage.listings.reduce((max, item) => Math.max(max, item.id), 0);
+    
+    const newId = latestId + 1;
+    
+    const testData = {
+      id: newId,
+      name: 'Test Pet - ' + new Date().toLocaleTimeString(),
+      title: 'Test Listing',
+      category: 'Pets',
+      price: Math.floor(Math.random() * 200),
+      location: 'Test City',
+      image: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0',
+      description: 'This is a test listing',
+      sellerName: 'Test Seller',
+      email: 'test@example.com',
+      phone: '+8801000000000',
+      date: new Date().toISOString().split('T')[0],
+      views: 0,
+      rating: 0,
+      tags: ['test'],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    // Add to MongoDB if connected
+    if (isConnected && listingsCollection) {
+      const result = await listingsCollection.insertOne(testData);
+      testData._id = result.insertedId.toString();
+      testData.source = 'mongodb-test';
+    } else {
+      // Add to memory storage
+      testData._id = `test-${Date.now()}`;
+      testData.source = 'memory-test';
+      memoryStorage.listings.push(testData);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Test data added successfully',
+      data: testData
+    });
+    
   } catch (error) {
-    console.error('❌ Error in /api/listing/:id:', error);
-    const fallbackData = getFallbackListing(req.params.id);
-    return res.json(fallbackData);
+    console.error('Error adding test data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add test data'
+    });
   }
 });
 
-// 19. GET LISTING BY ID (ALTERNATIVE)
-app.get('/listing/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    console.log(`📡 GET /listing/${id} (alternative endpoint)`);
-    req.url = `/listings/${id}`;
-    return app._router.handle(req, res);
-  } catch (error) {
-    console.error('❌ Error in /listing/:id:', error);
-    const fallbackData = getFallbackListing(req.params.id);
-    return res.json(fallbackData);
-  }
-});
-
-// 20. PING TEST
+// 21. PING TEST
 app.get('/ping', (req, res) => {
   res.json({
     success: true,
     message: 'pong 🏓',
     server: 'PawMart Backend',
-    timestamp: new Date().toISOString(),
-    endpoints: [
-      '/listings/:id',
-      '/api/listings/:id',
-      '/listing/:id',
-      '/api/listing/:id'
-    ]
+    database: isConnected ? 'connected' : 'memory',
+    timestamp: new Date().toISOString()
   });
 });
 
-// 21. GET ALL ENDPOINTS
+// 22. GET PRODUCT COUNT
+app.get('/count', async (req, res) => {
+  try {
+    let count = 0;
+    
+    if (isConnected && listingsCollection) {
+      count = await listingsCollection.countDocuments();
+    } else {
+      count = memoryStorage.listings.length;
+    }
+    
+    res.json({
+      success: true,
+      count: count,
+      expected: 12,
+      status: count >= 12 ? '✅ Complete' : '⚠️ Incomplete'
+    });
+    
+  } catch (error) {
+    res.json({
+      success: false,
+      count: memoryStorage.listings.length,
+      expected: 12,
+      error: error.message
+    });
+  }
+});
+
+// 23. GET ALL PRODUCTS WITH DETAILS
+app.get('/products/full', async (req, res) => {
+  try {
+    console.log('📡 GET /products/full - Detailed products list');
+    
+    let listings = [];
+    
+    if (isConnected && listingsCollection) {
+      listings = await listingsCollection
+        .find({})
+        .sort({ createdAt: -1 })
+        .toArray();
+      
+      listings = listings.map(item => ({
+        ...item,
+        _id: item._id ? item._id.toString() : `mongo-${Date.now()}`
+      }));
+    } else {
+      listings = [...memoryStorage.listings];
+    }
+    
+    res.json({
+      success: true,
+      count: listings.length,
+      products: listings
+    });
+    
+  } catch (error) {
+    console.error('❌ Error in /products/full:', error);
+    res.json({
+      success: true,
+      count: memoryStorage.listings.length,
+      products: memoryStorage.listings
+    });
+  }
+});
+
+// 24. GET ALL ENDPOINTS
 app.get('/endpoints', (req, res) => {
   res.json({
     success: true,
     endpoints: {
       singleListing: {
         primary: '/listings/:id',
-        api: '/api/listings/:id',
-        legacy: '/listing/:id',
-        legacyApi: '/api/listing/:id'
+        api: '/api/listings/:id'
       },
       allListings: '/listings, /api/listings',
       latest: '/listings/latest/:limit, /api/listings/latest/:limit',
+      recent: '/listings/recent, /api/listings/recent',
       category: '/listings/category/:category, /api/listings/category/:category',
-      orders: '/orders, /api/orders/user/:email',
+      orders: '/orders (POST), /orders/user/:email (GET)',
       health: '/health',
       dbStatus: '/db-status',
       seed: '/seed (POST)',
-      ping: '/ping'
+      ping: '/ping',
+      count: '/count',
+      productsFull: '/products/full',
+      addTest: '/add-test (POST)'
     },
-    note: 'All endpoints return data even if not found in database (fallback data provided)',
+    note: 'Hybrid storage - uses MongoDB if connected, otherwise uses in-memory storage',
     timestamp: new Date().toISOString()
   });
 });
@@ -983,17 +1468,20 @@ app.get('/endpoints', (req, res) => {
 app.use('*', (req, res) => {
   console.log(`❓ Route not found: ${req.method} ${req.originalUrl}`);
   
-  // Even for 404, return helpful response
-  if (req.originalUrl.includes('/listings/') || req.originalUrl.includes('/listing/')) {
-    const id = req.originalUrl.split('/').pop();
-    const fallbackData = getFallbackListing(id);
-    return res.json(fallbackData);
-  }
-  
   res.status(404).json({
     success: false,
     error: `Route not found: ${req.method} ${req.originalUrl}`,
-    suggestion: 'Try /listings, /listings/1, /api/listings/1, /health',
+    availableEndpoints: [
+      'GET /listings (12 products)',
+      'GET /listings/:id (1-12)',
+      'GET /api/listings/:id',
+      'GET /listings/latest/6',
+      'GET /listings/category/:category',
+      'GET /products/full (detailed)',
+      'GET /health',
+      'GET /ping',
+      'POST /seed (reset data)'
+    ],
     timestamp: new Date().toISOString()
   });
 });
@@ -1014,36 +1502,29 @@ app.listen(port, () => {
   console.log(`
 🚀 Server running on port ${port}
 ✅ CORS enabled for ALL origins (*)
+💾 Storage: ${isConnected ? 'MongoDB Atlas' : 'In-Memory (fallback)'}
 
-📡 TEST ENDPOINTS:
-🔗 Health: https://backend-10-five.vercel.app/health
-🔗 Test: https://backend-10-five.vercel.app/test
-🔗 Ping: https://backend-10-five.vercel.app/ping
-🔗 Endpoints: https://backend-10-five.vercel.app/endpoints
+📦 ${isConnected ? 'Check MongoDB for count' : memoryStorage.listings.length + ' PRODUCTS LOADED'}:
+🔗 All Products: http://localhost:${port}/listings
+🔗 Single Product: http://localhost:${port}/listings/1 (1-12)
+🔗 API Version: http://localhost:${port}/api/listings/1
+🔗 Latest 6: http://localhost:${port}/listings/latest/6
 
-🐾 LISTING ENDPOINTS (ALL WORK NOW):
-✅ https://backend-10-five.vercel.app/listings/1
-✅ https://backend-10-five.vercel.app/listings/fallback-1
-✅ https://backend-10-five.vercel.app/api/listings/1
-✅ https://backend-10-five.vercel.app/api/listings/fallback-1
-✅ https://backend-10-five.vercel.app/listing/1
-✅ https://backend-10-five.vercel.app/listing/fallback-1
-✅ https://backend-10-five.vercel.app/api/listing/1
-✅ https://backend-10-five.vercel.app/api/listing/fallback-1
+🏷️ CATEGORIES:
+🔗 Pets: http://localhost:${port}/listings/category/Pets (6 items)
+🔗 Food: http://localhost:${port}/listings/category/Food (3 items)
+🔗 Accessories: http://localhost:${port}/listings/category/Accessories (3 items)
 
-📊 DATA ENDPOINTS:
-🔗 All Listings: https://backend-10-five.vercel.app/listings
-🔗 Latest Listings: https://backend-10-five.vercel.app/listings/latest/6
-🔗 By Category: https://backend-10-five.vercel.app/listings/category/Pets
+🛠️ ADMIN:
+🔗 Health: http://localhost:${port}/health
+🔗 Reset: POST http://localhost:${port}/seed
+🔗 DB Status: http://localhost:${port}/db-status
 
-🛠 ADMIN ENDPOINTS:
-🔗 DB Status: https://backend-10-five.vercel.app/db-status
-🔗 Seed DB: https://backend-10-five.vercel.app/seed (POST)
-
-📌 NOTE: All endpoints now support fallback data for missing IDs
-  `);
+✅ Server ready! Using ${isConnected ? 'MongoDB' : 'in-memory'} storage.
+`);
 });
 
+// Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('🛑 Shutting down server...');
   try {
@@ -1056,4 +1537,12 @@ process.on('SIGINT', async () => {
     console.error('❌ Error during shutdown:', err);
     process.exit(1);
   }
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('🚨 Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
 });
