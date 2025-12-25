@@ -8,12 +8,34 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// ========== CORS CONFIGURATION ==========
+// ========== FIXED CORS CONFIGURATION ==========
+// Handle CORS manually first
+app.use((req, res, next) => {
+  // Allow all origins
+  res.header('Access-Control-Allow-Origin', '*');
+  // Allow specific headers that browsers might send
+  res.header('Access-Control-Allow-Headers', 
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma, Accept-Encoding, Accept-Language'
+  );
+  // Allow methods
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  // Allow credentials
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
+// Also use cors middleware for additional safety
 app.use(cors({
   origin: '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control', 'Pragma']
 }));
 
 app.use(express.json({ limit: '10mb' }));
@@ -734,10 +756,12 @@ app.get('/api/listings/:id', async (req, res) => {
   }
 });
 
-// 8. GET LATEST LISTINGS
+// 8. GET LATEST LISTINGS - NEW ENDPOINT
 app.get('/listings/latest/:limit?', async (req, res) => {
   try {
     const limit = parseInt(req.params.limit) || 6;
+    console.log(`📡 GET /listings/latest/${limit} request`);
+    
     let listings = [];
     
     if (isConnected && listingsCollection) {
@@ -751,17 +775,194 @@ app.get('/listings/latest/:limit?', async (req, res) => {
         ...item,
         _id: item._id ? item._id.toString() : `latest-${Date.now()}`
       }));
+      
+      console.log(`✅ Found ${listings.length} latest listings`);
+    } else {
+      console.log('⚠️ MongoDB not connected, returning sample data');
+      
+      // Return sample data
+      listings = [
+        {
+          _id: 'latest-1',
+          id: 1,
+          name: 'Golden Retriever Puppy',
+          category: 'Pets',
+          price: 0,
+          location: 'Dhaka',
+          image: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?w=800&auto=format&fit=crop&q=80',
+          description: 'Friendly 3-month-old puppy, vaccinated and ready for adoption',
+          sellerName: 'Pet Care Center',
+          email: 'petcare@example.com',
+          date: new Date().toISOString().split('T')[0],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          source: 'fallback'
+        },
+        {
+          _id: 'latest-2',
+          id: 2,
+          name: 'Persian Kitten',
+          category: 'Pets',
+          price: 150,
+          location: 'Chattogram',
+          image: 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=800&auto=format&fit=crop&q=80',
+          description: 'Beautiful white Persian kitten, 2 months old',
+          sellerName: 'Cat Lovers Hub',
+          email: 'catlover@example.com',
+          date: new Date().toISOString().split('T')[0],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          source: 'fallback'
+        }
+      ].slice(0, limit);
     }
     
     res.json(listings);
     
   } catch (error) {
-    console.error('Error in /listings/latest:', error);
+    console.error('❌ Error in /listings/latest:', error);
     res.json([]);
   }
 });
 
-// 9. GET LISTINGS BY CATEGORY
+// 9. API-COMPATIBLE LATEST LISTINGS
+app.get('/api/listings/latest/:limit?', async (req, res) => {
+  try {
+    console.log('📡 GET /api/listings/latest (API compatible)');
+    req.url = `/listings/latest${req.url.split('/api/listings/latest')[1]}`;
+    return app._router.handle(req, res);
+  } catch (error) {
+    console.error('❌ Error in /api/listings/latest:', error);
+    res.json([]);
+  }
+});
+
+// 10. GET RECENT LISTINGS - SPECIFICALLY FOR HOME PAGE
+app.get('/listings/recent', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 6;
+    console.log(`📡 GET /listings/recent?limit=${limit} request for Home Page`);
+    
+    let listings = [];
+    
+    if (isConnected && listingsCollection) {
+      console.log('🔍 Querying MongoDB for recent listings...');
+      
+      listings = await listingsCollection
+        .find({})
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .toArray();
+      
+      console.log(`✅ Found ${listings.length} recent listings in MongoDB`);
+      
+      // Format the data
+      const formattedListings = listings.map(item => ({
+        _id: item._id ? item._id.toString() : `mongo-${Date.now()}`,
+        id: item.id || item._id?.toString() || 'unknown',
+        name: item.name || item.title || 'Unnamed Listing',
+        category: item.category || 'General',
+        price: item.price || 0,
+        location: item.location || 'Unknown',
+        image: item.image || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&auto=format&fit=crop&q=80',
+        description: item.description || 'No description available',
+        sellerName: item.sellerName || 'Anonymous',
+        email: item.email || 'N/A',
+        date: item.date || (item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+        createdAt: item.createdAt || new Date(),
+        updatedAt: item.updatedAt || new Date()
+      }));
+      
+      res.json({
+        success: true,
+        message: `Found ${formattedListings.length} recent listings`,
+        listings: formattedListings,
+        limit: limit,
+        timestamp: new Date().toISOString()
+      });
+      
+    } else {
+      console.log('⚠️ MongoDB not connected, returning fallback data');
+      
+      // Fallback data
+      const fallbackListings = [
+        {
+          _id: 'recent-1',
+          id: 1,
+          name: 'Golden Retriever Puppy',
+          category: 'Pets',
+          price: 0,
+          location: 'Dhaka',
+          image: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?w=800&auto=format&fit=crop&q=80',
+          description: 'Friendly 3-month-old puppy, vaccinated and ready for adoption',
+          sellerName: 'Pet Care Center',
+          email: 'petcare@example.com',
+          date: new Date().toISOString().split('T')[0],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          source: 'fallback'
+        },
+        {
+          _id: 'recent-2',
+          id: 2,
+          name: 'Persian Kitten',
+          category: 'Pets',
+          price: 150,
+          location: 'Chattogram',
+          image: 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=800&auto=format&fit=crop&q=80',
+          description: 'Beautiful white Persian kitten, 2 months old',
+          sellerName: 'Cat Lovers Hub',
+          email: 'catlover@example.com',
+          date: new Date().toISOString().split('T')[0],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          source: 'fallback'
+        }
+      ].slice(0, limit);
+      
+      res.json({
+        success: true,
+        message: 'Using fallback data (MongoDB disconnected)',
+        listings: fallbackListings,
+        limit: limit,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error in /listings/recent:', error);
+    
+    // Even in error, return fallback data
+    res.json({
+      success: false,
+      message: 'Failed to fetch recent listings',
+      listings: [],
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 11. API-COMPATIBLE RECENT LISTINGS
+app.get('/api/listings/recent', async (req, res) => {
+  try {
+    console.log('📡 GET /api/listings/recent (API compatible)');
+    
+    // Reuse the same logic from /listings/recent
+    req.url = '/listings/recent';
+    return app._router.handle(req, res);
+    
+  } catch (error) {
+    console.error('❌ Error in /api/listings/recent:', error);
+    res.json({
+      success: false,
+      message: 'Failed to fetch recent listings',
+      listings: []
+    });
+  }
+});
+
+// 12. GET LISTINGS BY CATEGORY
 app.get('/listings/category/:category', async (req, res) => {
   try {
     const category = req.params.category;
@@ -854,7 +1055,7 @@ app.get('/listings/category/:category', async (req, res) => {
   }
 });
 
-// 10. API-COMPATIBLE CATEGORY ENDPOINT
+// 13. API-COMPATIBLE CATEGORY ENDPOINT
 app.get('/api/listings/category/:category', async (req, res) => {
   try {
     const category = req.params.category;
@@ -870,7 +1071,7 @@ app.get('/api/listings/category/:category', async (req, res) => {
   }
 });
 
-// 11. CREATE NEW LISTING
+// 14. CREATE NEW LISTING
 app.post('/listings', async (req, res) => {
   try {
     const listingData = req.body;
@@ -926,7 +1127,7 @@ app.post('/listings', async (req, res) => {
 
 // ========== ORDER ROUTES ==========
 
-// 12. CREATE NEW ORDER
+// 15. CREATE NEW ORDER
 app.post('/orders', async (req, res) => {
   try {
     const orderData = req.body;
@@ -972,7 +1173,7 @@ app.post('/orders', async (req, res) => {
   }
 });
 
-// 13. GET USER ORDERS BY EMAIL
+// 16. GET USER ORDERS BY EMAIL
 app.get('/orders/user/:email', async (req, res) => {
   try {
     const email = req.params.email;
@@ -1040,7 +1241,7 @@ app.get('/orders/user/:email', async (req, res) => {
   }
 });
 
-// 14. API-COMPATIBLE ORDER ROUTE
+// 17. API-COMPATIBLE ORDER ROUTE
 app.get('/api/orders/user/:email', async (req, res) => {
   try {
     const email = req.params.email;
@@ -1056,7 +1257,7 @@ app.get('/api/orders/user/:email', async (req, res) => {
   }
 });
 
-// 15. GET ALL ORDERS (ADMIN)
+// 18. GET ALL ORDERS (ADMIN)
 app.get('/orders', async (req, res) => {
   try {
     let orders = [];
@@ -1081,7 +1282,7 @@ app.get('/orders', async (req, res) => {
   }
 });
 
-// 16. SEED DATABASE
+// 19. SEED DATABASE
 app.post('/seed', async (req, res) => {
   try {
     console.log('🌱 Seeding database...');
@@ -1114,7 +1315,7 @@ app.post('/seed', async (req, res) => {
   }
 });
 
-// 17. DATABASE STATUS
+// 20. DATABASE STATUS
 app.get('/db-status', async (req, res) => {
   try {
     let status = {
@@ -1149,7 +1350,7 @@ app.get('/db-status', async (req, res) => {
   }
 });
 
-// 18. ADD TEST DATA
+// 21. ADD TEST DATA
 app.post('/add-test', async (req, res) => {
   try {
     // Get the latest ID
@@ -1197,7 +1398,7 @@ app.post('/add-test', async (req, res) => {
   }
 });
 
-// 19. GET USER LISTINGS BY EMAIL
+// 22. GET USER LISTINGS BY EMAIL
 app.get('/listings/user/:email', async (req, res) => {
   try {
     const email = req.params.email;
@@ -1223,7 +1424,7 @@ app.get('/listings/user/:email', async (req, res) => {
   }
 });
 
-// 20. ENVIRONMENT CHECK
+// 23. ENVIRONMENT CHECK
 app.get('/env-check', (req, res) => {
   res.json({
     success: true,
@@ -1236,7 +1437,7 @@ app.get('/env-check', (req, res) => {
   });
 });
 
-// 21. TEST MONGODB CONNECTION
+// 24. TEST MONGODB CONNECTION
 app.get('/test-mongo', async (req, res) => {
   try {
     console.log('🔍 Testing MongoDB connection...');
@@ -1266,7 +1467,7 @@ app.get('/test-mongo', async (req, res) => {
   }
 });
 
-// 22. PING TEST
+// 25. PING TEST
 app.get('/ping', (req, res) => {
   res.json({
     success: true,
@@ -1307,6 +1508,8 @@ app.listen(port, () => {
 🔗 Test: https://backend-10-five.vercel.app/test
 📊 Listings: https://backend-10-five.vercel.app/listings
 🔧 API Listings: https://backend-10-five.vercel.app/api/listings
+📈 Recent Listings: https://backend-10-five.vercel.app/listings/recent?limit=6
+📈 API Recent: https://backend-10-five.vercel.app/api/listings/recent?limit=6
 🐾 Categories: https://backend-10-five.vercel.app/listings/category/:category
 🔧 API Categories: https://backend-10-five.vercel.app/api/listings/category/:category
 📦 Orders: https://backend-10-five.vercel.app/api/orders/user/:email
